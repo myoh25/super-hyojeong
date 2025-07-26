@@ -2,7 +2,7 @@
 body {
     background-color: #000;
     color: white;
-    font-family: 'Malgun Gothic', sans-serif;
+    font-family: 'Jua', sans-serif;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; margin: 0; overflow: hidden;
 }
@@ -13,76 +13,55 @@ body {
     height: 800px;
 }
 
-/* 컨테이너 */
-#intro-sequence, #game-container, #ending-screen {
+/* 화면 공통 */
+.screen {
     width: 100%; height: 100%;
     border: 2px solid #555;
     position: absolute;
     background: #111 url('https://www.transparenttextures.com/patterns/stardust.png');
     overflow: hidden;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-}
-
-/* 인트로 장면 */
-#intro-sequence { display: none; }
-#intro-sequence.active { display: block; }
-.scene {
     display: none;
-    width: 100%;
-    height: 100%;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
     text-align: center;
     padding: 20px;
-    padding-bottom: 50px;
     box-sizing: border-box;
 }
-.scene.active { display: flex; }
-.dialogue-box {
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    width: 90%;
-    background-color: rgba(0, 0, 0, 0.7);
-    position: relative;
-    z-index: 1;
+.screen.active { display: flex; }
+
+/* 타이틀 화면 */
+.game-title {
+    font-size: 64px;
+    color: #ffdd59;
+    text-shadow: 0 0 10px #ffdd59, 0 0 20px #ff4757, 0 0 30px #ff4757;
+    animation: titleGlow 2.5s infinite ease-in-out;
 }
-.character { font-weight: bold; font-size: 20px; margin-bottom: 10px; color: #ffcc00; }
-.character.off-screen { color: #ff6b6b; }
-.intro-character {
-    width: 250px;
-    height: auto;
-    margin-bottom: -10px;
-    z-index: 1;
-}
-#start-game-button, #restart-button {
-    margin-top: 20px;
-    padding: 15px 30px;
+.press-key {
     font-size: 24px;
-    font-weight: bold;
-    color: white;
-    background-color: #ff4757;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
+    color: #ccc;
+    animation: pressKeyBlink 1.5s infinite;
 }
 
+/* 도움말 화면 */
+.help-content { text-align: left; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.help-content h3 { margin-top: 15px; }
+.help-content ul { list-style: none; padding-left: 0; }
+.help-content li { margin-bottom: 10px; font-size: 18px; display: flex; align-items: center; }
+.item-icon { display: inline-flex; justify-content: center; align-items: center; width: 25px; height: 25px; border-radius: 50%; margin-right: 10px; font-weight: bold; color: black; flex-shrink: 0;}
+
+/* 인트로 장면 */
+.scene { justify-content: flex-end; padding-bottom: 50px; }
+.dialogue-box { border: 2px solid #ddd; border-radius: 10px; padding: 20px; width: 90%; background-color: rgba(0, 0, 0, 0.7); position: relative; z-index: 1;}
+.character { font-weight: bold; font-size: 20px; margin-bottom: 10px; color: #ffcc00; }
+.character.off-screen { color: #ff6b6b; }
+.intro-character { width: 250px; height: auto; margin-bottom: -10px; z-index: 1; }
+#start-game-button, #real-start-button, #restart-button { margin-top: 20px; padding: 15px 30px; font-size: 24px; font-weight: bold; color: white; background-color: #ff4757; border: none; border-radius: 10px; cursor: pointer; position: relative; z-index: 1;}
+
 /* 게임 UI */
-#ui-container {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0));
-    z-index: 10;
-}
+#game-container { padding: 0; }
+#ui-container { position: absolute; top: 0; width: 100%; padding: 10px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0)); z-index: 10; }
 .ui-box { width: 40%; font-weight: bold; text-shadow: 1px 1px 2px black; }
 #player-hp-value, #boss-hp-value { font-size: 14px; color: #eee; }
 .hp-bar-container { width: 100%; height: 20px; background: rgba(0,0,0,0.5); border: 1px solid #999; border-radius: 5px; margin-top: 5px; }
@@ -93,48 +72,46 @@ body {
 #current-score-value { display: block; font-size: 28px; margin-top: 2px; color: #ffdd59; }
 
 /* 플레이어 상태 대시보드 */
-#dashboard {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-size: 16px;
-    font-weight: bold;
-    color: #eee;
-    z-index: 20;
-}
+#dashboard { position: absolute; bottom: 20px; left: 20px; background: rgba(0, 0, 0, 0.6); padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 16px; font-weight: bold; color: #eee; z-index: 20; }
 .dash-item { margin-bottom: 5px; }
 .dash-item:last-child { margin-bottom: 0; }
 .dash-item span { color: #ffdd59; margin-left: 5px; }
 .dash-item.super { color: #ff4757; display: none; }
 .dash-item.super span { color: #ff6b81; }
 
-/* 게임 객체 */
-#player { position: absolute; width: 60px; height: 60px; bottom: 30px; left: 50%; transform: translateX(-50%); transition: transform 0.1s; }
-#boss { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; transition: transform 0.1s; }
+/* --- 수정: 게임 객체 스타일 --- */
+#player {
+    position: absolute;
+    width: 50px; /* 가로 크기 */
+    height: 70px; /* 세로 크기 (비율 조정) */
+    object-fit: contain; /* 이미지 비율 유지 */
+}
+#boss {
+    position: absolute;
+    top: 100px; /* 초기 위치를 조금 내림 */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    transition: filter 0.1s;
+}
 .minion { position: absolute; width: 40px; height: 40px; }
+.hit { filter: brightness(3); }
 #wrapper.shake { animation: screenShake 0.1s; }
-.hit { transform: scale(1.1); filter: brightness(3); }
+
 
 /* 게임 객체 (CSS 구현) */
 .player-bullet { position: absolute; width: 8px; height: 20px; background: #f1c40f; border-radius: 4px; box-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f; }
 .enemy-bullet { position: absolute; width: 12px; height: 12px; background: #e74c3c; border-radius: 50%; box-shadow: 0 0 8px #e74c3c, 0 0 15px #e74c3c; }
 
-/* 아이템 (CSS 구현) */
+/* 아이템 */
 .item { position: absolute; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-weight: bold; color: black; font-size: 20px; animation: itemBob 2s infinite ease-in-out; }
 .item-heal { background: #2ed573; box-shadow: 0 0 15px #2ed573; }
 .item-rifle { background: #f1c40f; box-shadow: 0 0 15px #f1c40f; }
 .item-speed { background: #3498db; box-shadow: 0 0 15px #3498db; }
 .item-superweapon { background: radial-gradient(circle, #ff4757, #ff6b81, #ff7f50); box-shadow: 0 0 20px #ff4757; color: white; }
-.item-heal::before { content: 'H'; }
-.item-rifle::before { content: 'P'; }
-.item-speed::before { content: 'S'; }
 
 /* 엔딩 화면 */
-#ending-screen { display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .ending-story { display: none; margin-bottom: 30px; position: relative; width: 100%; height: 250px; }
 .ending-character { width: 150px; position: absolute; bottom: 0; }
 #ending-story-win img:nth-child(1) { left: 50px; }
@@ -143,7 +120,11 @@ body {
 .ending-narrative { font-size: 24px; font-weight: bold; color: #ffdd59; position: absolute; top: 20px; width: 100%; }
 #ending-story-lose .ending-narrative { color: #a4b0be; }
 #score-details { background: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 10px; width: 80%; }
+.button-group { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+#share-button { display: none; background: #3498db; }
 
 /* 애니메이션 */
+@keyframes titleGlow { 0%, 100% { text-shadow: 0 0 10px #ffdd59, 0 0 20px #ff4757; } 50% { text-shadow: 0 0 20px #ffdd59, 0 0 40px #ff4757; } }
+@keyframes pressKeyBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @keyframes itemBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes screenShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
