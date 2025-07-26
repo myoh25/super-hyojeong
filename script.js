@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const minionStats = { life: 1, attackPower: 2 };
     
     // 인트로 로직
-    introSequence.classList.add('active'); // 인트로 보이게 함
+    introSequence.classList.add('active');
     let currentSceneIndex = 0;
     introSequence.addEventListener('click', (e) => {
         if (currentSceneIndex >= scenes.length - 1 || e.target === startGameButton) return;
@@ -55,12 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
         [...playerBullets, ...enemies, ...enemyBullets, ...items].forEach(obj => obj.element.remove());
         playerBullets = [], enemies = [], enemyBullets = [], items = [];
 
-        player.style.left = '225px';
+        player.style.left = '50%';
+        player.style.transform = 'translateX(-50%)';
         boss.style.display = 'block';
 
         updateUI();
         
+        patterns.forEach(p => clearInterval(p)); // 이전 패턴 제거
         startPatterns();
+        if(gameLoopId) cancelAnimationFrame(gameLoopId); // 이전 루프 취소
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
@@ -80,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 게임 패턴
     function startPatterns() {
-        patterns.forEach(p => clearInterval(p));
         patterns = [];
         const createAttackInterval = () => setInterval(() => { if(!isGameOver) createPlayerBullet() }, 1000 / playerStats.attackSpeed);
         patterns.push(createAttackInterval());
@@ -102,10 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
         else { createBullet(-15); createBullet(0); createBullet(15); }
     }
     function createMinion() {
-        const minion = document.createElement('img'); minion.src = 'images/minion_ingame.png'; minion.className = 'minion';
-        const x = Math.random() * (gameContainer.offsetWidth - 40); minion.style.left = x + 'px'; minion.style.top = '-40px';
+        const minion = document.createElement('img');
+        minion.src = 'minion_ingame.png'; // 경로 수정
+        minion.className = 'minion';
+        const x = Math.random() * (gameContainer.offsetWidth - 40);
+        minion.style.left = x + 'px'; minion.style.top = '-40px';
         gameContainer.appendChild(minion);
-        enemies.push({ element: minion, x, y: -40, speedY: 2, ...minionStats });
+        enemies.push({ element: minion, x, y: -40, life: minionStats.life, speedY: 2 });
     }
     function createEnemyBullet(source) {
         const bullet = document.createElement('div'); bullet.className = 'enemy-bullet';
@@ -123,13 +128,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 객체 이동
-    function movePlayer() { player.style.left = (mouseX - gameContainer.offsetLeft - player.offsetWidth / 2) + 'px'; }
+    function movePlayer() {
+        let newLeft = mouseX - gameContainer.getBoundingClientRect().left - player.offsetWidth / 2;
+        // 게임 컨테이너 경계 체크
+        const minLeft = 0;
+        const maxLeft = gameContainer.offsetWidth - player.offsetWidth;
+        newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+        player.style.left = newLeft + 'px';
+    }
     function moveObjects(objects) { objects.forEach(obj => { obj.y += obj.speedY; obj.element.style.top = obj.y + 'px'; }); }
     
-    // 충돌 감지 (안전한 역순 for 루프)
+    // 충돌 감지
     function handleCollisions() {
         for (let i = playerBullets.length - 1; i >= 0; i--) {
             const bullet = playerBullets[i];
+            if (!bullet) continue;
             if (isColliding(bullet.element, boss)) {
                 bossInstance.life -= playerStats.attackPower;
                 bullet.element.remove(); playerBullets.splice(i, 1);
@@ -174,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (type === 'rifle' && playerStats.rifleLevel < 3) playerStats.rifleLevel++;
         else if (type === 'speed' && playerStats.attackSpeed < playerStats.maxAttackSpeed) {
             playerStats.attackSpeed += 0.5;
-            patterns.forEach(p => clearInterval(p)); startPatterns();
+            startPatterns(); // 공격 속도 변경 시 타이머 재설정
         }
     }
 
