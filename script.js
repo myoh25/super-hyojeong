@@ -53,9 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let titleScreenActive = true;
         showScreen(titleScreen);
 
-        function handleTitleInteraction() {
+        function handleTitleInteraction(event) {
             if (!titleScreenActive) return;
-            titleScreenActive = false; // 중복 실행 방지
+            titleScreenActive = false;
             
             if (!isMusicPlaying) {
                 bgm.play().then(() => { isMusicPlaying = true; }).catch(e => console.log("BGM 자동재생이 차단되었습니다."));
@@ -69,7 +69,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initTitleScreen();
-    realStartButton.addEventListener('click', () => showScreen(introSequence));
+
+    // --- 수정: 인트로 시작 시, 장면 인덱스와 상태를 완벽하게 초기화 ---
+    realStartButton.addEventListener('click', () => {
+        currentSceneIndex = 0; // 인트로 장면 인덱스를 0으로 리셋
+        const introScenes = introSequence.querySelectorAll('.scene');
+        introScenes.forEach((scene, index) => {
+            if (index === 0) {
+                scene.classList.add('active'); // 첫 장면만 보이게 함
+            } else {
+                scene.classList.remove('active');
+            }
+        });
+        showScreen(introSequence);
+    });
     
     introSequence.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') return;
@@ -88,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     restartButton.addEventListener('click', () => {
         endingScreen.classList.remove('active');
-        initTitleScreen(); // 게임 오버 시 타이틀 화면으로 돌아가도록 수정
+        initTitleScreen();
     });
     
     shareButton.addEventListener('click', async () => {
@@ -139,12 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boss.style.display = 'block';
         boss.className = '';
         dashSuperWeapon.style.display = 'none';
-        currentSceneIndex = 0; // 인트로 씬 인덱스 초기화
-        introSequence.querySelectorAll('.scene').forEach((scene, index) => {
-            if (index === 0) scene.classList.add('active');
-            else scene.classList.remove('active');
-        });
-
+        
         updateUI();
         startPatterns();
         
@@ -322,11 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         for (let i = enemies.length - 1; i >= 0; i--) {
-            const enemy = enemies[i];
+            const enemy = enemies[j];
             if(isColliding(enemy.element, player)) {
                 playerStats.life -= enemy.collisionDamage;
                 wrapper.classList.add('shake'); setTimeout(() => wrapper.classList.remove('shake'), 100);
-                enemy.element.remove(); enemies.splice(i, 1);
+                enemy.element.remove(); enemies.splice(j, 1);
                 if(playerStats.life <= 0 && !isGameOver) endGame(false);
             }
         }
