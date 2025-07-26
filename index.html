@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>효정, 민열을 구하라!</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="intro-sequence" class="active">
+        <div class="scene active"><p class="narrative">모청별에 도착한 두 대원...</p></div>
+        <div class="scene"><div class="dialogue-box"><span class="character">효정</span><p>잘 도착한 거 같은데... 민열이는 어디갔지?🤔</p></div></div>
+        <div class="scene"><div class="dialogue-box"><span class="character off-screen">민열</span><p>효정아!! 도와줘!!😫</p></div></div>
+        <div class="scene"><div class="dialogue-box"><span class="character">효정</span><p>앗, 모청별 괴물이 민열이를 끌고 갔잖아!!🤬</p></div></div>
+        <div class="scene"><div class="dialogue-box"><span class="character">효정</span><p>내가 나서야겠어! 거기 딱 기다려!</p></div><button id="start-game-button">GAME START!</button></div>
+    </div>
+
+    <div id="game-container">
+        <div id="ui-container">
+            <div class="ui-box">
+                <span>효정 HP</span>
+                <div class="hp-bar-container"><div id="player-hp-bar" class="hp-bar"></div></div>
+            </div>
+            <div class="ui-box">
+                <span>BOSS HP</span>
+                <div class="hp-bar-container"><div id="boss-hp-bar" class="hp-bar"></div></div>
+            </div>
+        </div>
+        <div id="player"></div>
+        <div id="boss"></div>
+    </div>
+
+    <div id="result-screen">
+        <h1 id="result-title"></h1>
+        <p>남은 라이프: <span id="result-lives">0</span></p>
+        <p>처치 미니언: <span id="result-minions">0</span></p>
+        <hr>
+        <h3>최종 점수: <span id="final-score">0</span></h3>
+        <button id="restart-button">다시 도전하기</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
