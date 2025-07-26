@@ -5,6 +5,7 @@ body {
     font-family: 'Jua', sans-serif;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; margin: 0; overflow: hidden;
+    touch-action: manipulation; /* 터치 지연 완화 추가 */
 }
 
 #wrapper {
@@ -30,6 +31,14 @@ body {
     box-sizing: border-box;
 }
 .screen.active { display: flex; }
+
+/* 인트로 장면 추가 (중복 방지) */
+.scene {
+    display: none;
+}
+.scene.active {
+    display: flex;
+}
 
 /* 로딩 화면 */
 .loading-text {
