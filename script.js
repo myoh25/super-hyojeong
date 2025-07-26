@@ -197,22 +197,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 플레이어 총알
     patterns.push(setInterval(() => {
       if (!isGameOver) createPlayerBullet();
-    }, 1000 / playerStats.attackSpeed));
+    }, 800 / playerStats.attackSpeed));
 
     // 보스 공격
     bossAttackId = setInterval(() => {
       if (!isGameOver) createBossSpreadShot();
-    }, 2000);
+    }, 1400);
 
     // 적 총알
     patterns.push(setInterval(() => {
       if (!isGameOver) enemies.forEach(e => createEnemyBullet(e.element, 90));
-    }, 3000));
+    }, 2500));
 
     // 미니언 생성
     patterns.push(setInterval(() => {
       if (!isGameOver) createMinion();
-    }, 2500));
+    }, 500));
 
     // 보스 이동
     bossMoveId = setInterval(() => {
