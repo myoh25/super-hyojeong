@@ -5,7 +5,6 @@ body {
     font-family: 'Jua', sans-serif;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; margin: 0; overflow: hidden;
-    touch-action: manipulation; /* 터치 지연 완화 추가 */
 }
 
 #wrapper {
@@ -31,14 +30,6 @@ body {
     box-sizing: border-box;
 }
 .screen.active { display: flex; }
-
-/* 인트로 장면 추가 (중복 방지) */
-.scene {
-    display: none;
-}
-.scene.active {
-    display: flex;
-}
 
 /* 로딩 화면 */
 .loading-text {
@@ -132,3 +123,14 @@ body {
 @keyframes pressKeyBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @keyframes itemBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes screenShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+/* ─── 인트로 장면 숨기기/보이기 ─── */
+#intro-sequence .scene {
+  display: none;
+}
+
+#intro-sequence .scene.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 50px; /* 기존 패딩 유지 */
+}
