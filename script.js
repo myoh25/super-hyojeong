@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     joystick.addEventListener(evt, () => {
       joyActive = false;
       joyVec    = { x: 0, y: 0 };
-      stick.style.transform = 'translate(0, 0)';
+      stick.style.transform = 'translate(-50%,-50%)';
     }, { passive: false })
   );
 
