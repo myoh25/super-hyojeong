@@ -43,17 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseBossStats = { life: 2000, maxLife: 2000, attackPower: 10, moveSpeed: 2, moveDirection: 1 };
     const minionStats = { life: 1, attackPower: 2, collisionDamage: 20 };
 
-    // --- 화면 전환 및 시작 로직 ---
+    // --- 화면 전환 및 시작 로직 (오류 수정된 최종 버전) ---
     function showScreen(screenToShow) {
-        screens.forEach(screen => screen.classList.remove('active'));
-        if (screenToShow) screenToShow.classList.add('active');
+        screens.forEach(screen => screen.style.display = 'none'); // 모든 화면을 확실히 숨김
+        if (screenToShow) screenToShow.style.display = 'flex'; // 요청된 화면만 flex로 표시
     }
 
     function initTitleScreen() {
         let titleScreenActive = true;
         showScreen(titleScreen);
 
-        function handleTitleInteraction(event) {
+        function handleTitleInteraction() {
             if (!titleScreenActive) return;
             titleScreenActive = false;
             
@@ -70,16 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initTitleScreen();
 
-    // --- 수정: 인트로 시작 시, 장면 인덱스와 상태를 완벽하게 초기화 ---
     realStartButton.addEventListener('click', () => {
         currentSceneIndex = 0; // 인트로 장면 인덱스를 0으로 리셋
         const introScenes = introSequence.querySelectorAll('.scene');
         introScenes.forEach((scene, index) => {
-            if (index === 0) {
-                scene.classList.add('active'); // 첫 장면만 보이게 함
-            } else {
-                scene.classList.remove('active');
-            }
+            if (index === 0) scene.classList.add('active');
+            else scene.classList.remove('active');
         });
         showScreen(introSequence);
     });
@@ -94,13 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     startGameButton.addEventListener('click', () => {
-        showScreen(null);
-        gameContainer.style.display = 'flex';
+        showScreen(gameContainer);
         initGame();
     });
     
     restartButton.addEventListener('click', () => {
-        endingScreen.classList.remove('active');
         initTitleScreen();
     });
     
@@ -144,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(superWeaponCountdown) clearInterval(superWeaponCountdown);
         patterns = [];
         
-        [...playerBullets, ...enemies, ...enemyBullets, ...items].forEach(obj => obj.element.remove());
+        gameContainer.querySelectorAll('.player-bullet, .minion, .enemy-bullet, .item').forEach(el => el.remove());
         playerBullets = [], enemies = [], enemyBullets = [], items = [];
 
         player.style.left = (gameContainer.offsetWidth / 2 - player.offsetWidth / 2) + 'px';
@@ -152,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boss.style.display = 'block';
         boss.className = '';
         dashSuperWeapon.style.display = 'none';
-        
+
         updateUI();
         startPatterns();
         
