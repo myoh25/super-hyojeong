@@ -3,89 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>효정, 민열을 구하라!</title>
+    <title>SUPER HYOJEONG</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="wrapper">
-        <div id="intro-sequence">
-            <div class="scene active">
-                <p class="narrative">모청별에 도착한 두 대원...</p>
-            </div>
-            <div class="scene">
-                <img src="hyojeong_intro_ending.png" alt="효정" class="intro-character">
-                <div class="dialogue-box">
-                    <span class="character">효정</span>
-                    <p>잘 도착한 거 같은데... 민열이는 어디갔지?🤔</p>
-                </div>
-            </div>
-            <div class="scene">
-                <img src="minyeol_intro_ending.png" alt="민열" class="intro-character">
-                <div class="dialogue-box">
-                    <span class="character off-screen">민열</span>
-                    <p>효정아!! 도와줘!!😫</p>
-                </div>
-            </div>
-            <div class="scene">
-                <img src="hyojeong_intro_ending.png" alt="효정" class="intro-character">
-                <div class="dialogue-box">
-                    <span class="character">효정</span>
-                    <p>앗, 모청별 괴물이 민열이를 끌고 갔잖아!!🤬</p>
-                </div>
-            </div>
-            <div class="scene">
-                <img src="hyojeong_intro_ending.png" alt="효정" class="intro-character">
-                <div class="dialogue-box">
-                    <span class="character">효정</span>
-                    <p>내가 나서야겠어! 거기 딱 기다려!</p>
-                </div>
-                <button id="start-game-button">GAME START!</button>
-            </div>
+        <div id="title-screen" class="screen active">
+            <h1 class="game-title">SUPER HYOJEONG</h1>
+            <p class="press-key">- press any key -</p>
         </div>
 
-        <div id="game-container" style="display: none;">
+        <div id="help-screen" class="screen">
+            <h2>게임 설명</h2>
+            <div class="help-content">
+                <p>🚀 효정이를 조종하여 민열이를 구출하세요!</p>
+                <h3>아이템 종류</h3>
+                <ul>
+                    <li><span class="item-icon item-heal">H</span> : 체력을 모두 회복합니다. (기본 체력 200)</li>
+                    <li><span class="item-icon item-rifle">P</span> : 총알 줄기가 늘어나고 공격력이 강해집니다. (최대 5단계, 단계별 +3)</li>
+                    <li><span class="item-icon item-speed">S</span> : 공격 속도가 빨라집니다. (최대 5.0)</li>
+                    <li><span class="item-icon item-superweapon">🔥</span> : 10초간 강력한 슈퍼웨폰을 발사합니다.</li>
+                </ul>
+            </div>
+            <button id="real-start-button">START!</button>
+        </div>
+
+        <div id="intro-sequence" class="screen">
+            <div class="scene active"><p class="narrative">모청별에 도착한 두 대원...</p></div>
+            <div class="scene"><img src="hyojeong_intro_ending.png" alt="효정" class="intro-character"><div class="dialogue-box"><span class="character">효정</span><p>잘 도착한 거 같은데... 민열이는 어디갔지?🤔</p></div></div>
+            <div class="scene"><img src="minyeol_intro_ending.png" alt="민열" class="intro-character"><div class="dialogue-box"><span class="character off-screen">민열</span><p>효정아!! 도와줘!!😫</p></div></div>
+            <div class="scene"><img src="hyojeong_intro_ending.png" alt="효정" class="intro-character"><div class="dialogue-box"><span class="character">효정</span><p>앗, 모청별 괴물이 민열이를 끌고 갔잖아!!🤬</p></div></div>
+            <div class="scene"><img src="hyojeong_intro_ending.png" alt="효정" class="intro-character"><div class="dialogue-box"><span class="character">효정</span><p>내가 나서야겠어! 거기 딱 기다려!</p></div><button id="start-game-button">OK!</button></div>
+        </div>
+
+        <div id="game-container" class="screen">
             <div id="ui-container">
-                <div class="ui-box">
-                    <span>효정 HP <span id="player-hp-value"></span></span>
-                    <div class="hp-bar-container"><div id="player-hp-bar" class="hp-bar"></div></div>
-                </div>
-                <div class="ui-box score-box">
-                    <span>SCORE</span>
-                    <span id="current-score-value">0</span>
-                </div>
-                <div class="ui-box">
-                    <span>BOSS HP <span id="boss-hp-value"></span></span>
-                    <div class="hp-bar-container"><div id="boss-hp-bar" class="hp-bar"></div></div>
-                </div>
+                <div class="ui-box"><span>효정 HP <span id="player-hp-value"></span></span><div class="hp-bar-container"><div id="player-hp-bar" class="hp-bar"></div></div></div>
+                <div class="ui-box score-box"><span>SCORE</span><span id="current-score-value">0</span></div>
+                <div class="ui-box"><span>BOSS HP <span id="boss-hp-value"></span></span><div class="hp-bar-container"><div id="boss-hp-bar" class="hp-bar"></div></div></div>
             </div>
             <img id="player" src="hyojeong_ingame.png" alt="Player">
             <img id="boss" src="boss.png" alt="Boss">
             <div id="dashboard">
                 <div class="dash-item">🔫 L V <span id="dash-rifle-lvl">1</span></div>
                 <div class="dash-item">⚡ S P D <span id="dash-speed-lvl">1.0</span></div>
-                <div id="dash-super-weapon" class="dash-item super">
-                    🔥 SUPER <span id="dash-super-timer">10</span>s
-                </div>
+                <div id="dash-super-weapon" class="dash-item super">🔥 SUPER <span id="dash-super-timer">10</span>s</div>
             </div>
         </div>
 
-        <div id="ending-screen" style="display: none;">
-            <div id="ending-story-win" class="ending-story">
-                <img src="hyojeong_intro_ending.png" alt="효정" class="ending-character">
-                <img src="minyeol_intro_ending.png" alt="민열" class="ending-character">
-                <p class="ending-narrative">효정이가 괴물을 물리치고 민열이를 구했다!</p>
-            </div>
-            <div id="ending-story-lose" class="ending-story">
-                <img src="hyojeong_intro_ending.png" alt="효정" class="ending-character defeated">
-                <p class="ending-narrative">결국... 민열이를 구하지 못했다...</p>
-            </div>
+        <div id="ending-screen" class="screen">
+            <div id="ending-story-win" class="ending-story"><img src="hyojeong_intro_ending.png" alt="효정" class="ending-character"><img src="minyeol_intro_ending.png" alt="민열" class="ending-character"><p class="ending-narrative">효정이가 괴물을 물리치고 민열이를 구했다!</p></div>
+            <div id="ending-story-lose" class="ending-story"><img src="hyojeong_intro_ending.png" alt="효정" class="ending-character defeated"><p class="ending-narrative">결국... 민열이를 구하지 못했다...</p></div>
             <div id="score-details">
                 <h1 id="result-title"></h1>
                 <p>남은 라이프: <span id="result-lives">0</span></p>
                 <p>처치 미니언: <span id="result-minions">0</span></p>
                 <hr>
                 <h3>최종 점수: <span id="final-score">0</span></h3>
-                <button id="restart-button">다시 도전하기</button>
+                <div class="button-group">
+                    <button id="restart-button">다시 도전하기</button>
+                    <button id="share-button">자랑하기 🏆</button>
+                </div>
             </div>
         </div>
     </div>
