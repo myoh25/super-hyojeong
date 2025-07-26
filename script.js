@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 화면(screen) 요소 ---
+    // --- DOM 요소 ---
     const wrapper = document.getElementById('wrapper');
     const screens = document.querySelectorAll('.screen');
     const titleScreen = document.getElementById('title-screen');
@@ -8,14 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const introSequence = document.getElementById('intro-sequence');
     const gameContainer = document.getElementById('game-container');
     const endingScreen = document.getElementById('ending-screen');
-
-    // --- 버튼 요소 ---
     const realStartButton = document.getElementById('real-start-button');
     const startGameButton = document.getElementById('start-game-button');
     const restartButton = document.getElementById('restart-button');
     const shareButton = document.getElementById('share-button');
-
-    // --- 게임 및 기타 요소 ---
     const player = document.getElementById('player');
     const boss = document.getElementById('boss');
     const playerHpBar = document.getElementById('player-hp-bar');
@@ -28,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashSpeedLvl = document.getElementById('dash-speed-lvl');
     const dashSuperWeapon = document.getElementById('dash-super-weapon');
     const dashSuperTimer = document.getElementById('dash-super-timer');
+    const bgmToggle = document.getElementById('bgm-toggle');
+    const bgm = document.getElementById('bgm');
 
     // --- 게임 상태 및 설정 ---
     let playerStats, bossInstance, minionsDefeated, currentScore, gameLoopId, lastFinalScore = 0;
@@ -38,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isBerserk = false;
     let isSuperWeaponActive = false;
     let superWeaponCountdown;
+    let isMusicPlaying = false;
+    let currentSceneIndex = 0;
 
     const basePlayerStats = { life: 200, maxLife: 200, attackPower: 1, rifleLevel: 1, attackSpeed: 1.0, maxAttackSpeed: 5.0 };
     const baseBossStats = { life: 2000, maxLife: 2000, attackPower: 10, moveSpeed: 2, moveDirection: 1 };
@@ -50,22 +50,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initTitleScreen() {
+        let titleScreenActive = true;
         showScreen(titleScreen);
-        function handleTitleScreen(event) {
-            if (event.type === 'click' || event.type === 'keydown') {
-                window.removeEventListener('keydown', handleTitleScreen);
-                window.removeEventListener('click', handleTitleScreen);
-                showScreen(helpScreen);
+
+        function handleTitleInteraction() {
+            if (!titleScreenActive) return;
+            titleScreenActive = false; // 중복 실행 방지
+            
+            if (!isMusicPlaying) {
+                bgm.play().then(() => { isMusicPlaying = true; }).catch(e => console.log("BGM 자동재생이 차단되었습니다."));
             }
+            showScreen(helpScreen);
+            window.removeEventListener('keydown', handleTitleInteraction);
+            window.removeEventListener('click', handleTitleInteraction);
         }
-        window.addEventListener('keydown', handleTitleScreen);
-        window.addEventListener('click', handleTitleScreen);
+        window.addEventListener('keydown', handleTitleInteraction);
+        window.addEventListener('click', handleTitleInteraction);
     }
     
-    initTitleScreen(); // 게임 첫 로드 시 타이틀 화면부터 시작
+    initTitleScreen();
     realStartButton.addEventListener('click', () => showScreen(introSequence));
-
-    let currentSceneIndex = 0;
+    
     introSequence.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') return;
         const introScenes = introSequence.querySelectorAll('.scene');
@@ -83,8 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     restartButton.addEventListener('click', () => {
         endingScreen.classList.remove('active');
-        gameContainer.style.display = 'flex';
-        initGame();
+        initTitleScreen(); // 게임 오버 시 타이틀 화면으로 돌아가도록 수정
     });
     
     shareButton.addEventListener('click', async () => {
@@ -102,16 +106,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    bgmToggle.addEventListener('click', () => {
+        bgm.muted = !bgm.muted;
+        if (bgm.muted) {
+            bgmToggle.innerText = '🎵 BGM OFF';
+            bgmToggle.classList.add('muted');
+        } else {
+            bgmToggle.innerText = '🎵 BGM ON';
+            bgmToggle.classList.remove('muted');
+            if (bgm.paused) bgm.play();
+        }
+    });
+
     // --- 게임 초기화 ---
     function initGame() {
         playerStats = { ...basePlayerStats };
         bossInstance = { element: boss, ...baseBossStats, x: gameContainer.offsetWidth / 2, y: 100 };
-        minionsDefeated = 0;
-        currentScore = 0;
-        isGameOver = false;
-        isBerserk = false;
+        minionsDefeated = 0; currentScore = 0; isGameOver = false; isBerserk = false;
         isSuperWeaponActive = false;
-
+        
         patterns.forEach(p => clearInterval(p));
         if(bossAttackInterval) clearInterval(bossAttackInterval);
         if(bossMoveInterval) clearInterval(bossMoveInterval);
@@ -126,6 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
         boss.style.display = 'block';
         boss.className = '';
         dashSuperWeapon.style.display = 'none';
+        currentSceneIndex = 0; // 인트로 씬 인덱스 초기화
+        introSequence.querySelectorAll('.scene').forEach((scene, index) => {
+            if (index === 0) scene.classList.add('active');
+            else scene.classList.remove('active');
+        });
 
         updateUI();
         startPatterns();
@@ -142,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         moveObjects(enemies);
         moveObjects(enemyBullets);
         moveObjects(items);
-        moveBoss();
         handleCollisions();
         cleanupObjects();
         updateUI();
@@ -246,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         player.style.top = (targetY - player.offsetHeight / 2) + 'px';
     }
     function moveBoss() {
+        if (isGameOver) return;
         bossInstance.x += bossInstance.moveSpeed * bossInstance.moveDirection;
         if (bossInstance.x > gameContainer.offsetWidth - boss.offsetWidth / 2 || bossInstance.x < boss.offsetWidth / 2) {
             bossInstance.moveDirection *= -1;
@@ -353,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 화면 밖 객체 제거 ---
     function cleanupObjects() {
-        const cleanup = (arr, checkY = true) => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] && ( (checkY && (arr[i].y < -50 || arr[i].y > gameContainer.offsetHeight + 50)) || arr[i].x < -50 || arr[i].x > gameContainer.offsetWidth + 50)) { arr[i].element.remove(); arr.splice(i, 1); } } };
+        const cleanup = (arr) => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] && (arr[i].y < -50 || arr[i].y > gameContainer.offsetHeight + 50 || arr[i].x < -50 || arr[i].x > gameContainer.offsetWidth + 50)) { arr[i].element.remove(); arr.splice(i, 1); } } };
         cleanup(playerBullets); cleanup(enemies); cleanup(enemyBullets); cleanup(items);
     }
     
