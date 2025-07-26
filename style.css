@@ -8,7 +8,7 @@ body {
 }
 
 /* 컨테이너 */
-#intro-sequence, #game-container, #result-screen {
+#intro-sequence, #game-container, #ending-screen {
     width: 500px; height: 800px;
     border: 2px solid #555;
     position: absolute;
@@ -17,6 +17,8 @@ body {
 }
 
 /* 인트로 장면 */
+#intro-sequence { display: none; }
+#intro-sequence.active { display: block; }
 .scene { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
 .scene.active { display: flex; }
 .dialogue-box { border: 2px solid #ddd; border-radius: 10px; padding: 20px; width: 80%; background-color: rgba(0, 0, 0, 0.7); }
@@ -31,18 +33,31 @@ body {
 .hp-bar { height: 100%; background: #2ed573; border-radius: 5px; transition: width 0.2s; }
 #boss-hp-bar { background: #ff4757; }
 
-/* 게임 객체 */
-#player { position: absolute; width: 50px; height: 50px; background-color: #00a8ff; border-radius: 50%; }
-#boss { position: absolute; top: 50px; left: 220px; width: 60px; height: 60px; background-color: #8e44ad; }
-.minion { position: absolute; width: 30px; height: 30px; background-color: #ff7f50; }
+/* 게임 객체 (이미지 태그) */
+#player { position: absolute; width: 60px; height: 60px; }
+#boss { position: absolute; top: 50px; left: 220px; width: 80px; height: 80px; }
+.minion { position: absolute; width: 40px; height: 40px; }
+
+/* 게임 객체 (CSS 구현) */
 .player-bullet { position: absolute; width: 5px; height: 15px; background-color: #f1c40f; }
 .enemy-bullet { position: absolute; width: 10px; height: 10px; background-color: #e74c3c; border-radius: 50%;}
 
-/* 아이템 */
-.item { position: absolute; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; font-weight: bold; }
-.item-heal { background-color: #2ed573; border: 2px solid white; content: 'H'; }
-.item-rifle { background-color: #f1c40f; border: 2px solid white; content: 'P'; }
-.item-speed { background-color: #3498db; border: 2px solid white; content: 'S'; }
+/* 아이템 (CSS 구현) */
+.item { position: absolute; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; font-weight: bold; color: black; }
+.item-heal { background-color: #2ed573; border: 2px solid white; }
+.item-rifle { background-color: #f1c40f; border: 2px solid white; }
+.item-speed { background-color: #3498db; border: 2px solid white; }
+.item-heal::before { content: 'H'; }
+.item-rifle::before { content: 'P'; }
+.item-speed::before { content: 'S'; }
 
-/* 결과 화면 */
-#result-screen { display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+/* 엔딩 화면 */
+#ending-screen { display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.ending-story { display: none; margin-bottom: 30px; position: relative; width: 100%; height: 250px; }
+.ending-character { width: 150px; position: absolute; bottom: 0; }
+#ending-story-win img:nth-child(1) { left: 50px; }
+#ending-story-win img:nth-child(2) { right: 50px; }
+.defeated { filter: grayscale(80%); opacity: 0.7; left: 50%; transform: translateX(-50%); }
+.ending-narrative { font-size: 24px; font-weight: bold; color: #ffdd59; position: absolute; top: 20px; width: 100%; }
+#ending-story-lose .ending-narrative { color: #a4b0be; }
+#score-details { background: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 10px; }
