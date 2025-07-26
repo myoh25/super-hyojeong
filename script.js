@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- DOM 요소 ---
+    // --- 화면(screen) 요소 ---
     const wrapper = document.getElementById('wrapper');
     const screens = document.querySelectorAll('.screen');
     const titleScreen = document.getElementById('title-screen');
@@ -8,10 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const introSequence = document.getElementById('intro-sequence');
     const gameContainer = document.getElementById('game-container');
     const endingScreen = document.getElementById('ending-screen');
+
+    // --- 버튼 요소 ---
     const realStartButton = document.getElementById('real-start-button');
     const startGameButton = document.getElementById('start-game-button');
     const restartButton = document.getElementById('restart-button');
     const shareButton = document.getElementById('share-button');
+
+    // --- 게임 및 기타 요소 ---
     const player = document.getElementById('player');
     const boss = document.getElementById('boss');
     const playerHpBar = document.getElementById('player-hp-bar');
@@ -26,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashSuperTimer = document.getElementById('dash-super-timer');
 
     // --- 게임 상태 및 설정 ---
-    let playerStats, bossInstance, minionsDefeated, currentScore, gameLoopId;
+    let playerStats, bossInstance, minionsDefeated, currentScore, gameLoopId, lastFinalScore = 0;
     let playerBullets = [], enemies = [], enemyBullets = [], items = [];
     let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
     let isGameOver = false;
@@ -34,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isBerserk = false;
     let isSuperWeaponActive = false;
     let superWeaponCountdown;
-    let lastFinalScore = 0;
 
     const basePlayerStats = { life: 200, maxLife: 200, attackPower: 1, rifleLevel: 1, attackSpeed: 1.0, maxAttackSpeed: 5.0 };
     const baseBossStats = { life: 2000, maxLife: 2000, attackPower: 10, moveSpeed: 2, moveDirection: 1 };
@@ -43,24 +46,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 화면 전환 및 시작 로직 ---
     function showScreen(screenToShow) {
         screens.forEach(screen => screen.classList.remove('active'));
-        if(screenToShow) screenToShow.classList.add('active');
+        if (screenToShow) screenToShow.classList.add('active');
     }
-    showScreen(titleScreen);
-    function handleTitleScreen(event) {
-        if (event.type === 'click' || event.type === 'keydown') {
-            showScreen(helpScreen);
-            window.removeEventListener('keydown', handleTitleScreen);
-            window.removeEventListener('click', handleTitleScreen);
+
+    function initTitleScreen() {
+        showScreen(titleScreen);
+        function handleTitleScreen(event) {
+            if (event.type === 'click' || event.type === 'keydown') {
+                window.removeEventListener('keydown', handleTitleScreen);
+                window.removeEventListener('click', handleTitleScreen);
+                showScreen(helpScreen);
+            }
         }
+        window.addEventListener('keydown', handleTitleScreen);
+        window.addEventListener('click', handleTitleScreen);
     }
-    window.addEventListener('keydown', handleTitleScreen);
-    window.addEventListener('click', handleTitleScreen);
-    realStartButton.addEventListener('click', () => showScreen(introSequence));
     
+    initTitleScreen(); // 게임 첫 로드 시 타이틀 화면부터 시작
+    realStartButton.addEventListener('click', () => showScreen(introSequence));
+
     let currentSceneIndex = 0;
     introSequence.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
         const introScenes = introSequence.querySelectorAll('.scene');
-        if (currentSceneIndex >= introScenes.length - 1 || e.target === startGameButton) return;
+        if (currentSceneIndex >= introScenes.length - 1) return;
         introScenes[currentSceneIndex].classList.remove('active');
         currentSceneIndex++;
         introScenes[currentSceneIndex].classList.add('active');
@@ -78,7 +87,20 @@ document.addEventListener('DOMContentLoaded', () => {
         initGame();
     });
     
-    shareButton.addEventListener('click', async () => { /* 이전과 동일 */ });
+    shareButton.addEventListener('click', async () => {
+        const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${lastFinalScore}점\n\n너도 도전해봐! 👇`;
+        const shareData = { title: 'SUPER HYOJEONG', text: shareText, url: window.location.href };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else if (navigator.clipboard) {
+                await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+                alert('점수와 링크가 클립보드에 복사되었어요!');
+            }
+        } catch (err) {
+            console.error('Share failed:', err);
+        }
+    });
 
     // --- 게임 초기화 ---
     function initGame() {
@@ -89,8 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
         isGameOver = false;
         isBerserk = false;
         isSuperWeaponActive = false;
+
+        patterns.forEach(p => clearInterval(p));
+        if(bossAttackInterval) clearInterval(bossAttackInterval);
+        if(bossMoveInterval) clearInterval(bossMoveInterval);
         if(superWeaponCountdown) clearInterval(superWeaponCountdown);
-        dashSuperWeapon.style.display = 'none';
+        patterns = [];
         
         [...playerBullets, ...enemies, ...enemyBullets, ...items].forEach(obj => obj.element.remove());
         playerBullets = [], enemies = [], enemyBullets = [], items = [];
@@ -99,14 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
         player.style.top = (gameContainer.offsetHeight - player.offsetHeight - 30) + 'px';
         boss.style.display = 'block';
         boss.className = '';
-        
-        updateUI();
-        
-        patterns.forEach(p => clearInterval(p));
-        if(bossAttackInterval) clearInterval(bossAttackInterval);
-        if(bossMoveInterval) clearInterval(bossMoveInterval);
-        startPatterns();
+        dashSuperWeapon.style.display = 'none';
 
+        updateUI();
+        startPatterns();
+        
         if(gameLoopId) cancelAnimationFrame(gameLoopId);
         gameLoopId = requestAnimationFrame(gameLoop);
     }
@@ -119,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         moveObjects(enemies);
         moveObjects(enemyBullets);
         moveObjects(items);
+        moveBoss();
         handleCollisions();
         cleanupObjects();
         updateUI();
@@ -127,47 +151,100 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 게임 패턴 ---
     function startPatterns() {
-        patterns = [];
         const createAttackInterval = () => setInterval(() => { if(!isGameOver) createPlayerBullet() }, 1000 / playerStats.attackSpeed);
         patterns.push(createAttackInterval());
-        
         bossAttackInterval = setInterval(() => { if(!isGameOver) createBossSpreadShot() }, 2000);
-        
-        patterns.push(setInterval(() => {
-            if(!isGameOver) { enemies.forEach(enemy => createEnemyBullet(enemy.element, 90)); }
-        }, 3000));
-        
-        patterns.push(setInterval(() => { if(!isGameOver) createMinion() }, 2500)); // 미니언 생성 간격 단축
-        
+        patterns.push(setInterval(() => { if(!isGameOver) { enemies.forEach(enemy => createEnemyBullet(enemy.element, 90)); } }, 3000));
+        patterns.push(setInterval(() => { if(!isGameOver) createMinion() }, 2500));
         bossMoveInterval = setInterval(() => { if(!isGameOver) moveBoss() }, 50);
     }
 
     // --- 객체 생성 ---
-    function createPlayerBullet() { /* 이전과 동일 */ }
-    function createMinion() { /* 이전과 동일 */ }
-    function createEnemyBullet(source, angle) { /* 이전과 동일 */ }
-    function createBossSpreadShot() { /* 이전과 동일 */ }
-    function createItem(x, y) { /* 이전과 동일 */ }
+    function createPlayerBullet() {
+        if (isSuperWeaponActive) {
+            const numBullets = 10;
+            const angleSpread = 120;
+            const startAngle = 210;
+            for (let i = 0; i < numBullets; i++) {
+                const angle = startAngle + (i * (angleSpread / (numBullets - 1)));
+                const rad = angle * (Math.PI / 180);
+                const speed = 8;
+                const bullet = document.createElement('div'); bullet.className = 'player-bullet';
+                bullet.style.left = (player.offsetLeft + player.offsetWidth / 2 - 4) + 'px';
+                bullet.style.top = (player.offsetTop) + 'px';
+                gameContainer.appendChild(bullet);
+                playerBullets.push({ element: bullet, x: bullet.offsetLeft, y: bullet.offsetTop, speedX: speed * Math.cos(rad), speedY: speed * Math.sin(rad), attackPower: 10 });
+            }
+            return;
+        }
+        
+        const createBullet = (offsetX) => {
+            const bullet = document.createElement('div'); bullet.className = 'player-bullet';
+            bullet.style.left = (player.offsetLeft + player.offsetWidth / 2 - 4 + offsetX) + 'px';
+            bullet.style.top = (player.offsetTop) + 'px';
+            gameContainer.appendChild(bullet);
+            playerBullets.push({ element: bullet, x: bullet.offsetLeft, y: bullet.offsetTop, speedX: 0, speedY: -10 });
+        };
+        switch (playerStats.rifleLevel) {
+            case 1: createBullet(0); break;
+            case 2: createBullet(-8); createBullet(8); break;
+            case 3: createBullet(-12); createBullet(0); createBullet(12); break;
+            case 4: createBullet(-18); createBullet(-6); createBullet(6); createBullet(18); break;
+            case 5: createBullet(-24); createBullet(-12); createBullet(0); createBullet(12); createBullet(24); break;
+        }
+    }
+    function createMinion() {
+        const minion = document.createElement('img'); minion.src = 'minion_ingame.png'; minion.className = 'minion';
+        const x = Math.random() * (gameContainer.offsetWidth - 40);
+        minion.style.left = x + 'px'; minion.style.top = '-40px';
+        gameContainer.appendChild(minion);
+        enemies.push({ element: minion, x, y: -40, life: minionStats.life, attackPower: minionStats.attackPower, collisionDamage: minionStats.collisionDamage, speedX: 0, speedY: 2 });
+    }
+    function createEnemyBullet(source, angle) {
+        const bullet = document.createElement('div'); bullet.className = 'enemy-bullet';
+        const rect = source.getBoundingClientRect();
+        const gameRect = gameContainer.getBoundingClientRect();
+        const x = rect.left - gameRect.left + rect.width / 2;
+        const y = rect.top - gameRect.top + rect.height;
+        bullet.style.left = (x - 6) + 'px'; bullet.style.top = (y - 6) + 'px';
+        gameContainer.appendChild(bullet);
+        const rad = angle * (Math.PI / 180);
+        const speed = 5;
+        enemyBullets.push({ element: bullet, x, y, speedX: speed * Math.cos(rad), speedY: speed * Math.sin(rad) });
+    }
+    function createBossSpreadShot() {
+        createEnemyBullet(boss, 75); createEnemyBullet(boss, 90); createEnemyBullet(boss, 105);
+    }
+    function createItem(x, y) {
+        let type;
+        const rand = Math.random();
+        if (rand < 0.05) type = 'superweapon';
+        else if (rand < 0.15) type = 'heal';
+        else if (rand < 0.60) type = 'rifle';
+        else type = 'speed';
+        
+        const item = document.createElement('div'); item.className = 'item item-' + type;
+        if(type === 'superweapon') item.innerHTML = '🔥';
+        
+        item.style.left = x + 'px'; item.style.top = y + 'px';
+        gameContainer.appendChild(item);
+        items.push({ element: item, x, y, type, speedX: 0, speedY: 1 });
+    }
 
     // --- 객체 이동 ---
     function movePlayer() {
         const gameRect = gameContainer.getBoundingClientRect();
         let targetX = mouseX - gameRect.left;
         let targetY = mouseY - gameRect.top;
-
-        // 경계 제한
         const minX = player.offsetWidth / 2;
         const maxX = gameContainer.offsetWidth - player.offsetWidth / 2;
-        const minY = gameContainer.offsetHeight * 0.25; // 상단 25% 이동 불가
+        const minY = gameContainer.offsetHeight * 0.25;
         const maxY = gameContainer.offsetHeight - player.offsetHeight / 2;
-
         targetX = Math.max(minX, Math.min(targetX, maxX));
         targetY = Math.max(minY, Math.min(targetY, maxY));
-        
         player.style.left = (targetX - player.offsetWidth / 2) + 'px';
         player.style.top = (targetY - player.offsetHeight / 2) + 'px';
     }
-
     function moveBoss() {
         bossInstance.x += bossInstance.moveSpeed * bossInstance.moveDirection;
         if (bossInstance.x > gameContainer.offsetWidth - boss.offsetWidth / 2 || bossInstance.x < boss.offsetWidth / 2) {
@@ -175,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         boss.style.left = (bossInstance.x - boss.offsetWidth / 2) + 'px';
     }
-
     function moveObjects(objects) {
         objects.forEach(obj => {
             obj.x += obj.speedX; obj.y += obj.speedY;
@@ -248,7 +324,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 아이템 효과 ---
     function applyItemEffect(type) {
-        if (type === 'superweapon') { /* 이전과 동일 */ }
+        if (type === 'superweapon') {
+            if (isSuperWeaponActive) return;
+            isSuperWeaponActive = true;
+            let duration = 10;
+            dashSuperTimer.innerText = duration;
+            dashSuperWeapon.style.display = 'block';
+            if(superWeaponCountdown) clearInterval(superWeaponCountdown);
+            superWeaponCountdown = setInterval(() => {
+                duration--;
+                dashSuperTimer.innerText = duration;
+                if (duration <= 0) {
+                    isSuperWeaponActive = false;
+                    dashSuperWeapon.style.display = 'none';
+                    clearInterval(superWeaponCountdown);
+                }
+            }, 1000);
+        }
         else if(type === 'heal') playerStats.life = playerStats.maxLife;
         else if (type === 'rifle' && playerStats.rifleLevel < 5) {
             playerStats.rifleLevel++; playerStats.attackPower += 3;
@@ -260,10 +352,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 화면 밖 객체 제거 ---
-    function cleanupObjects() { /* 이전과 동일 */ }
+    function cleanupObjects() {
+        const cleanup = (arr, checkY = true) => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] && ( (checkY && (arr[i].y < -50 || arr[i].y > gameContainer.offsetHeight + 50)) || arr[i].x < -50 || arr[i].x > gameContainer.offsetWidth + 50)) { arr[i].element.remove(); arr.splice(i, 1); } } };
+        cleanup(playerBullets); cleanup(enemies); cleanup(enemyBullets); cleanup(items);
+    }
     
     // --- UI 및 게임 종료 ---
-    function updateUI() { /* 이전과 동일 */ }
+    function updateUI() {
+        const playerLife = Math.max(0, playerStats.life);
+        const bossLife = Math.max(0, bossInstance.life);
+        playerHpBar.style.width = (playerLife / playerStats.maxLife * 100) + '%';
+        bossHpBar.style.width = (bossLife / bossInstance.maxLife * 100) + '%';
+        playerHpValue.innerText = `${playerLife}/${playerStats.maxLife}`;
+        bossHpValue.innerText = `${bossLife}/${bossInstance.maxLife}`;
+        currentScoreValue.innerText = currentScore;
+        dashRifleLvl.innerText = playerStats.rifleLevel;
+        dashSpeedLvl.innerText = playerStats.attackSpeed.toFixed(1);
+    }
     function endGame(isWin) {
         isGameOver = true;
         cancelAnimationFrame(gameLoopId);
@@ -275,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const winStory = document.getElementById('ending-story-win');
         const loseStory = document.getElementById('ending-story-lose');
         const resultTitle = document.getElementById('result-title');
+        
         if (isWin) {
             winStory.style.display = 'block'; loseStory.style.display = 'none';
             resultTitle.innerText = "MISSION CLEAR!";
@@ -290,13 +396,14 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFinalScore = (finalLives * 10) + (minionsDefeated * 100);
         document.getElementById('final-score').innerText = lastFinalScore;
         boss.style.display = 'none';
+        
         setTimeout(() => {
-            showScreen(endingScreen);
             gameContainer.style.display = 'none';
+            showScreen(endingScreen);
         }, 1500);
     }
     
-    // 마우스 위치 추적
+    // --- 마우스 및 터치 위치 추적 ---
     window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
-    window.addEventListener('touchmove', e => { if(e.touches.length > 0) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; }});
+    window.addEventListener('touchmove', e => { if(e.touches.length > 0) { e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; }}, { passive: false });
 });
