@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(bossMoveId);
     clearInterval(superTimerId);
     if (gameLoopId) cancelAnimationFrame(gameLoopId);
+    patterns = [];
 
     // 게임 오브젝트 제거
     gameContainer.querySelectorAll('.player-bullet, .minion, .enemy-bullet, .item')
