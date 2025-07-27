@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const realStartButton = getEl('real-start-button');
     const startGameButton = getEl('start-game-button');
     const restartButton = getEl('restart-button');
-    const shareButton = getEl('share-button'); // 공유하기 버튼은 현재 HTML에 없습니다. 추가해야 합니다.
     const player = getEl('player');
     const boss = getEl('boss');
     const playerHpBar = getEl('player-hp-bar');
