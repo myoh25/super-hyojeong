@@ -371,42 +371,55 @@ document.addEventListener('DOMContentLoaded', () => {
         dashRifleLvl.innerText    = playerStats.rifleLevel;
         dashSpeedLvl.innerText    = playerStats.attackSpeed.toFixed(1);
     }
-    function endGame(win) {
-        if (isGameOver) return; isGameOver = true;
-        cancelAnimationFrame(gameLoopId);
-        patterns.forEach(id=>clearInterval(id));
-        clearInterval(superTimerId); clearInterval(shjTimerId);
+    ffunction endGame(win) {
+    if (isGameOver) return;
+    isGameOver = true;
+    cancelAnimationFrame(gameLoopId);
+    patterns.forEach(id => clearInterval(id));
+    clearInterval(superTimerId);
+    clearInterval(shjTimerId);
 
-        if (win) {
-            endingStoryLose.style.display = 'none'; winSequence.style.display = 'block';
-            let winSceneIndex = 0;
-            const winScenes = winSequence.querySelectorAll('.scene');
-            winScenes.forEach((s,i)=>s.classList.toggle('active', i===0));
-            const winClickHandler = () => {
-                if (winSceneIndex < winScenes.length - 1) {
-                    winScenes[winSceneIndex].classList.remove('active');
-                    winScenes[++winSceneIndex].classList.add('active');
-                } else {
-                    winSequence.removeEventListener('click', winClickHandler);
-                    winSequence.style.display = 'none';
-                    scoreDetails.style.display = 'block';
-                }
-            };
-            winSequence.addEventListener('click', winClickHandler);
-        } else {
-            winSequence.style.display = 'none'; endingStoryLose.style.display = 'flex'; scoreDetails.style.display = 'block';
-        }
-        
-        getEl('result-title').innerText = win ? 'MISSION CLEAR!' : 'GAME OVER';
-        const lives = Math.max(0, playerStats.life);
-        getEl('result-lives').innerText   = `${lives} (x10점)`;
-        getEl('result-minions').innerText = `${minionsDefeated} (x100점)`;
-        finalScore = lives * 10 + score;
-        getEl('final-score').innerText = finalScore;
+    // --- 최종 점수 계산 ---
+    getEl('result-title').innerText = win ? 'MISSION CLEAR!' : 'GAME OVER';
+    const lives = Math.max(0, playerStats.life);
+    getEl('result-lives').innerText = `${lives} (x10점)`;
+    getEl('result-minions').innerText = `${minionsDefeated} (x100점)`;
+    finalScore = lives * 10 + score;
+    getEl('final-score').innerText = finalScore;
 
-        boss.style.display = 'none';
-        showScreen(endingScreen);
+    // --- 화면 표시 로직 수정 ---
+    if (win) {        // 승리 시: 승리 컷씬을 먼저 보여주고, 클릭하면 점수판이 나옴
+        endingStoryLose.style.display = 'none';
+        scoreDetails.style.display = 'none'; // 점수판 일단 숨김
+        winSequence.style.display = 'block'; // block으로 해야 CSS가 적용됨
+
+        let winSceneIndex = 0;
+        const winScenes = winSequence.querySelectorAll('.scene');
+        winScenes.forEach((s, i) => s.classList.toggle('active', i === 0));
+
+        const winClickHandler = () => {
+            if (winSceneIndex < winScenes.length - 1) {
+                winScenes[winSceneIndex].classList.remove('active');
+                winScenes[++winSceneIndex].classList.add('active');
+            } else {
+                // 마지막 컷씬 후 점수판 표시
+                winSequence.removeEventListener('click', winClickHandler);
+                winSequence.style.display = 'none';
+                scoreDetails.style.display = 'block';
+            }
+        };
+        winSequence.addEventListener('click', winClickHandler);
+
+    } else {
+        // 패배 시: 요청대로 컷씬 없이 바로 결과 표시
+        winSequence.style.display = 'none';
+        endingStoryLose.style.display = 'flex'; // flex로 해야 .defeated 스타일이 보임
+        scoreDetails.style.display = 'block';
     }
+
+    boss.style.display = 'none';
+    showScreen(endingScreen);
+}
 
     // --- 조이스틱 이벤트 ---
     function updateGameRects() {
