@@ -338,6 +338,8 @@ html, body {
     width: 100%;
     height: 100%;
     display: none;
+    position: absolute;
+    top: 0; left: 0;
 }
 .ending-character {
     width: 150px;
@@ -346,6 +348,11 @@ html, body {
 }
 #win-sequence .intro-character {
     bottom: auto;
+}
+#ending-story-lose {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 .defeated {
     filter: grayscale(80%);
@@ -356,24 +363,33 @@ html, body {
 .ending-narrative {
     font-size: 24px;
     font-weight: bold;
-    position: absolute;
-    top: 20px;
-    width: 100%;
+    color: #a4b0be;
+    position: relative;
+    margin-bottom: 20px;
 }
 #ending-story-win .ending-narrative { color: #ffdd59; }
-#ending-story-lose .ending-narrative { color: #a4b0be; }
+#ending-story-lose .ending-character {
+    position: relative;
+    margin-top: 20px;
+}
 #score-details {
-    background: rgba(0, 0, 0, 0.5);
-    padding: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px 40px;
     border-radius: 10px;
-    width: 80%;
+    width: auto;
     display: none;
+    position: relative;
+    z-index: 5;
 }
 .button-group {
     display: flex;
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
+}
+#share-button {
+    display: none;
+    background: #3498db;
 }
 
 /* 조이스틱 */
