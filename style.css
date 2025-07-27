@@ -334,15 +334,6 @@ html, body {
 .item-superhyojeong::after { content: '✨'; }
 
 /* 엔딩 화면 */
-.final-narrative {
-    font-size: 28px;
-    font-weight: bold;
-    color: #ffdd59;
-    margin-bottom: 20px;
-}
-#final-lose-view .final-narrative {
-    color: #a4b0be;
-}
 .final-character-group {
     position: relative;
     width: 320px;
@@ -431,13 +422,6 @@ html, body {
     margin-top: 0;
     /* 레이아웃 순서 3번 */
     order: 3;
-}
-
-/* 승리 컷씬이 화면 하단에 나오도록 재설정 */
-#win-sequence {
-    width: 100%;
-    height: 100%;
-    display: none; /* JS로 제어 */
 }
 
 /* 애니메이션 정의 */
