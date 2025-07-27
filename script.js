@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     // --- DOM 요소 조회 ---
     const getEl = id => document.getElementById(id);
     const wrapper = getEl('wrapper');
@@ -99,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen(gameContainer);
         initGame();
     });
-
+    
     restartButton.addEventListener('click', initTitleScreen);
     
     bgmToggle.addEventListener('click', () => {
@@ -133,10 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getEl('win-sequence').style.display = 'none';
         getEl('ending-story-lose').style.display = 'none';
 
-        const rect = joystick.getBoundingClientRect();
-        joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        joyRadius = rect.width / 2;
-
+        updateGameRects();
         updateUI();
         startPatterns();
         if (gameLoopId) cancelAnimationFrame(gameLoopId);
@@ -405,6 +401,12 @@ document.addEventListener('DOMContentLoaded', () => {
         joyActive = true;
         stick.style.transition = '0s';
         if (e.touches) e.preventDefault();
+        
+        window.addEventListener('pointermove', handleJoyMove, { passive: false });
+        window.addEventListener('touchmove', handleJoyMove, { passive: false });
+        window.addEventListener('pointerup', handleJoyEnd, { passive: false });
+        window.addEventListener('touchend', handleJoyEnd, { passive: false });
+        window.addEventListener('pointercancel', handleJoyEnd, { passive: false });
     }
     function handleJoyMove(e) {
         if (!joyActive) return;
@@ -425,19 +427,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.touches) e.preventDefault();
     }
     function handleJoyEnd() {
+        if (!joyActive) return;
         joyActive = false;
         joyVec = { x: 0, y: 0 };
         stick.style.transition = '0.1s';
         stick.style.transform = 'translate(-50%, -50%)';
+        
+        window.removeEventListener('pointermove', handleJoyMove);
+        window.removeEventListener('touchmove', handleJoyMove);
+        window.removeEventListener('pointerup', handleJoyEnd);
+        window.removeEventListener('touchend', handleJoyEnd);
+        window.removeEventListener('pointercancel', handleJoyEnd);
     }
-
     joystick.addEventListener('pointerdown', handleJoyStart, { passive: false });
-    joystick.addEventListener('pointermove', handleJoyMove, { passive: false });
-    joystick.addEventListener('pointerup', handleJoyEnd, { passive: false });
     joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
-    joystick.addEventListener('touchmove', handleJoyMove, { passive: false });
-    joystick.addEventListener('touchend', handleJoyEnd, { passive: false });
-    joystick.addEventListener('touchcancel', handleJoyEnd, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
     function updateGameRects() {
