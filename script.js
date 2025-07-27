@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dashRifleLvl.innerText    = playerStats.rifleLevel;
         dashSpeedLvl.innerText    = playerStats.attackSpeed.toFixed(1);
     }
-    ffunction endGame(win) {
+    function endGame(win) {
     if (isGameOver) return;
     isGameOver = true;
     cancelAnimationFrame(gameLoopId);
