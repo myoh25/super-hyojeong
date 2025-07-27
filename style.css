@@ -323,8 +323,6 @@ html, body {
 .item-speed { background: #3498db; box-shadow: 0 0 15px #3498db; }
 .item-superweapon { background: radial-gradient(circle, #ff4757, #ff6b81, #ff7f50); box-shadow: 0 0 20px #ff4757; color: white; }
 .item-superhyojeong { background: radial-gradient(circle, #f1c40f, #ffffff, #3498db); box-shadow: 0 0 25px #fff; }
-
-/* ===== 추가: 아이템 문자 표시 ===== */
 .item::after {
     color: white;
     text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
@@ -334,8 +332,6 @@ html, body {
 .item-speed::after { content: 'S'; }
 .item-superweapon::after { content: '🔥'; }
 .item-superhyojeong::after { content: '✨'; }
-/* =============================== */
-
 
 /* 엔딩 화면 */
 .ending-story, #win-sequence {
@@ -379,20 +375,15 @@ html, body {
     gap: 20px;
     margin-top: 20px;
 }
-#share-button {
-    display: none;
-    background: #3498db;
-}
 
 /* 조이스틱 */
 #joystick {
     position: fixed;
-    bottom: 40px;
-    right: 40px;
-    width: 120px;
-    height: 120px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     touch-action: none;
     z-index: 30;
@@ -401,17 +392,13 @@ html, body {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     transition: transform 0.1s;
     pointer-events: none;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-}
-#joystick:active #stick {
-    background: rgba(255, 255, 255, 0.5);
 }
 
 /* 애니메이션 정의 */
