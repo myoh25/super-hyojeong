@@ -29,13 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const bgm = getEl('bgm');
     const joystick = getEl('joystick');
     const stick = getEl('stick');
+    const winSequence = getEl('win-sequence');
+    const endingStoryLose = getEl('ending-story-lose');
+    const scoreDetails = getEl('score-details');
 
     // --- 상태 변수 ---
     let playerStats, bossState, minionsDefeated, score, gameLoopId, finalScore;
     let playerBullets = [], enemies = [], enemyBullets = [], items = [];
     let isGameOver = false, isBerserk = false, isSuperActive = false, isMusicPlaying = false, isInvincible = false;
     let superTimerId, shjTimerId, sceneIndex = 0;
-    let patterns = [], bossAttackId, bossMoveId;
+    let patterns = [];
     let joyActive = false, joyVec = { x: 0, y: 0 };
     let joyCenter = { x: 0, y: 0 }, joyRadius = 0;
     let gameRect;
@@ -48,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagesToLoad = ['hyojeong_ingame.png', 'boss.png', 'minion_ingame.png', 'hyojeong_intro_ending.png', 'minyeol_intro_ending.png'];
     function preloadImages(urls, cb) {
         let loaded = 0;
+        if (urls.length === 0) return cb();
         urls.forEach(src => {
             const img = new Image();
             img.src = src;
@@ -68,7 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
         function onInteract() {
             if (!active) return;
             active = false;
-            if (!isMusicPlaying) bgm.play().then(() => isMusicPlaying = true).catch(() => {});
+            if (!isMusicPlaying) {
+                bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
+            }
             showScreen(helpScreen);
             window.removeEventListener('keydown', onInteract);
             window.removeEventListener('click', onInteract);
@@ -117,7 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         patterns.forEach(id => clearInterval(id));
         patterns = [];
-        clearInterval(bossAttackId); clearInterval(bossMoveId); clearInterval(superTimerId); clearInterval(shjTimerId);
+        clearInterval(superTimerId); 
+        clearInterval(shjTimerId);
 
         gameContainer.querySelectorAll('.player-bullet, .minion, .enemy-bullet, .item').forEach(el => el.remove());
         playerBullets = [], enemies = [], enemyBullets = [], items = [];
@@ -128,9 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         player.classList.remove('invincible');
         dashSuperWeapon.style.display = 'none';
         dashSuperHyojeong.style.display = 'none';
-        getEl('score-details').style.display = 'none';
-        getEl('win-sequence').style.display = 'none';
-        getEl('ending-story-lose').style.display = 'none';
+        scoreDetails.style.display = 'none';
+        winSequence.style.display = 'none';
+        endingStoryLose.style.display = 'none';
 
         updateGameRects();
         updateUI();
@@ -143,7 +150,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop() {
         if (isGameOver) return;
         movePlayerByJoystick();
-        moveObjects(playerBullets); moveObjects(enemies); moveObjects(enemyBullets); moveObjects(items);
+        moveObjects(playerBullets);
+        moveObjects(enemies);
+        moveObjects(enemyBullets);
+        moveObjects(items);
         moveBoss();
         handleCollisions();
         cleanupObjects();
@@ -154,11 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 패턴 시작 ---
     function startPatterns() {
         patterns.push(setInterval(() => !isGameOver && createPlayerBullet(), 1000 / playerStats.attackSpeed));
-        bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), 1400);
+        const bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), isBerserk ? 1000 : 1400);
+        const bossMoveId = setInterval(() => !isGameOver && moveBoss(), 50);
+        patterns.push(bossAttackId);
+        patterns.push(bossMoveId);
         patterns.push(setInterval(() => !isGameOver && enemies.forEach(e => createEnemyBullet(e.element, 90)), 2500));
         patterns.push(setInterval(() => !isGameOver && createMinion(), 500));
         patterns.push(setInterval(() => !isGameOver && createItem(Math.random()*(gameRect.width-30), Math.random()*(gameRect.height-30)), 3000));
-        bossMoveId = setInterval(() => !isGameOver && moveBoss(), 50);
     }
 
     // --- 생성 함수들 ---
@@ -257,8 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isColliding(bt.element, boss)) {
                 handleHit(boss); bossState.life -= dmg;
                 if (!isBerserk && bossState.life <= baseBossStats.life/2) {
-                    isBerserk = true; clearInterval(bossAttackId);
-                    bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), 1000);
+                    isBerserk = true;
+                    patterns.forEach(id=>clearInterval(id)); patterns = []; startPatterns();
                 }
                 bt.element.remove(); playerBullets.splice(i, 1);
                 if (bossState.life <= 0) endGame(true);
@@ -363,29 +375,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGameOver) return; isGameOver = true;
         cancelAnimationFrame(gameLoopId);
         patterns.forEach(id=>clearInterval(id));
-        clearInterval(bossAttackId); clearInterval(bossMoveId); clearInterval(superTimerId); clearInterval(shjTimerId);
+        clearInterval(superTimerId); clearInterval(shjTimerId);
 
-        const winSeq = getEl('win-sequence'), loseS = getEl('ending-story-lose'), scoreD = getEl('score-details');
-        
         if (win) {
-            loseS.style.display = 'none'; winSeq.style.display = 'block';
+            endingStoryLose.style.display = 'none'; winSequence.style.display = 'block';
             let winSceneIndex = 0;
-            const winScenes = winSeq.querySelectorAll('.scene');
+            const winScenes = winSequence.querySelectorAll('.scene');
             winScenes.forEach((s,i)=>s.classList.toggle('active', i===0));
             const winClickHandler = () => {
                 if (winSceneIndex < winScenes.length - 1) {
                     winScenes[winSceneIndex].classList.remove('active');
                     winScenes[++winSceneIndex].classList.add('active');
                 } else {
-                    winSeq.removeEventListener('click', winClickHandler);
-                    scoreD.style.display = 'block';
+                    winSequence.removeEventListener('click', winClickHandler);
+                    winSequence.style.display = 'none';
+                    scoreDetails.style.display = 'block';
                 }
             };
-            winSeq.addEventListener('click', winClickHandler);
+            winSequence.addEventListener('click', winClickHandler);
         } else {
-            winSeq.style.display = 'none'; loseS.style.display = 'block'; scoreD.style.display = 'block';
+            winSequence.style.display = 'none'; endingStoryLose.style.display = 'flex'; scoreDetails.style.display = 'block';
         }
         
+        getEl('result-title').innerText = win ? 'MISSION CLEAR!' : 'GAME OVER';
         const lives = Math.max(0, playerStats.life);
         getEl('result-lives').innerText   = `${lives} (x10점)`;
         getEl('result-minions').innerText = `${minionsDefeated} (x100점)`;
@@ -397,6 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 조이스틱 이벤트 ---
+    function updateGameRects() {
+        gameRect = gameContainer.getBoundingClientRect();
+        const rect = joystick.getBoundingClientRect();
+        joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        joyRadius = rect.width / 2;
+    }
     function handleJoyStart(e) {
         joyActive = true;
         stick.style.transition = '0s';
@@ -443,12 +461,9 @@ document.addEventListener('DOMContentLoaded', () => {
     joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
-    function updateGameRects() {
-        gameRect = gameContainer.getBoundingClientRect();
-        const rect = joystick.getBoundingClientRect();
-        joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        joyRadius = rect.width / 2;
-    }
     window.addEventListener('resize', updateGameRects);
-    preloadImages(imagesToLoad, initTitleScreen);
+    preloadImages(imagesToLoad, () => {
+        loadingScreen.classList.remove('active');
+        initTitleScreen();
+    });
 });
