@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const realStartButton = getEl('real-start-button');
     const startGameButton = getEl('start-game-button');
     const restartButton = getEl('restart-button');
+    const shareButton = getEl('share-button');
     const player = getEl('player');
     const boss = getEl('boss');
     const playerHpBar = getEl('player-hp-bar');
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerHpValue = getEl('player-hp-value');
     const bossHpValue = getEl('boss-hp-value');
     const currentScoreValue = getEl('current-score-value');
+    const dashboard = getEl('dashboard');
     const dashRifleLvl = getEl('dash-rifle-lvl');
     const dashSpeedLvl = getEl('dash-speed-lvl');
     const dashSuperWeapon = getEl('dash-super-weapon');
@@ -103,6 +105,18 @@ document.addEventListener('DOMContentLoaded', () => {
         initTitleScreen();
     });
 
+    shareButton.addEventListener('click', async () => {
+        const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${finalScore}\n\n너도 도전해봐! 👇`;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'SUPER HYOJEONG', text: shareText, url: window.location.href });
+            } else if (navigator.clipboard) {
+                await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+                alert('점수와 링크가 클립보드에 복사되었어요!');
+            }
+        } catch (err) { console.error('Share failed:', err); }
+    });
+
     bgmToggle.addEventListener('click', () => {
         bgm.muted = !bgm.muted;
         bgmToggle.innerText = bgm.muted ? '🎵 BGM OFF' : '🎵 BGM ON';
@@ -112,17 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 게임 초기화 ---
     function initGame() {
-        playerStats     = { ...basePlayerStats };
-        bossState       = { element: boss, ...baseBossStats, x: gameContainer.offsetWidth / 2 };
+        playerStats = { ...basePlayerStats };
+        bossState = { element: boss, ...baseBossStats, x: gameContainer.offsetWidth / 2 };
         minionsDefeated = 0; score = 0;
         isGameOver = false; isBerserk = false; isSuperActive = false; isInvincible = false;
         
         patterns.forEach(id => clearInterval(id));
         patterns = [];
-        clearInterval(bossAttackId);
-        clearInterval(bossMoveId);
-        clearInterval(superTimerId);
-        clearInterval(shjTimerId);
+        clearInterval(bossAttackId); clearInterval(bossMoveId); clearInterval(superTimerId); clearInterval(shjTimerId);
 
         gameContainer.querySelectorAll('.player-bullet, .minion, .enemy-bullet, .item').forEach(el => el.remove());
         playerBullets = [], enemies = [], enemyBullets = [], items = [];
@@ -136,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dashSuperHyojeong.style.display = 'none';
         getEl('score-details').style.display = 'none';
         getEl('win-sequence').style.display = 'none';
+        getEl('ending-story-lose').style.display = 'none';
 
         const rect = joystick.getBoundingClientRect();
         joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -155,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         moveObjects(enemies);
         moveObjects(enemyBullets);
         moveObjects(items);
-        moveBoss();
         handleCollisions();
         cleanupObjects();
         updateUI();
@@ -164,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 패턴 시작 ---
     function startPatterns() {
-        patterns.push(setInterval(() => !isGameOver && createPlayerBullet(), 800 / playerStats.attackSpeed));
+        patterns.push(setInterval(() => !isGameOver && createPlayerBullet(), 1000 / playerStats.attackSpeed));
         bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), 1400);
         patterns.push(setInterval(() => !isGameOver && enemies.forEach(e => createEnemyBullet(e.element, 90)), 2500));
         patterns.push(setInterval(() => !isGameOver && createMinion(), 500));
@@ -201,29 +212,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     function createMinion() {
-        const m = document.createElement('img');
-        m.src = 'minion_ingame.png';
-        m.className = 'minion';
+        const m = document.createElement('img'); m.src = 'minion_ingame.png'; m.className = 'minion';
         const x = Math.random() * (gameContainer.offsetWidth - 40);
-        m.style.left = x + 'px';
-        m.style.top  = '-40px';
+        m.style.left = x + 'px'; m.style.top  = '-40px';
         gameContainer.appendChild(m);
-        enemies.push({
-            element: m, x, y: -40,
-            life: minionStats.life, attackPower: minionStats.attackPower,
-            collisionDamage: minionStats.collisionDamage,
-            speedX: 0, speedY: 2
-        });
+        enemies.push({ element: m, x, y: -40, life: minionStats.life, attackPower: minionStats.attackPower, collisionDamage: minionStats.collisionDamage, speedX: 0, speedY: 2 });
     }
     function createEnemyBullet(src, angle) {
-        const bullet = document.createElement('div');
-        bullet.className = 'enemy-bullet';
-        const r1 = src.getBoundingClientRect();
-        const r2 = gameContainer.getBoundingClientRect();
+        const bullet = document.createElement('div'); bullet.className = 'enemy-bullet';
+        const r1 = src.getBoundingClientRect(); const r2 = gameContainer.getBoundingClientRect();
         const x = r1.left - r2.left + r1.width / 2;
         const y = r1.top  - r2.top  + r1.height;
-        bullet.style.left = (x - 6) + 'px';
-        bullet.style.top  = (y - 6) + 'px';
+        bullet.style.left = (x - 6) + 'px'; bullet.style.top  = (y - 6) + 'px';
         gameContainer.appendChild(bullet);
         const rad = angle * Math.PI / 180, speed = 5;
         enemyBullets.push({ element: bullet, x, y, speedX: speed * Math.cos(rad), speedY: speed * Math.sin(rad) });
@@ -247,8 +247,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!joyActive) return;
         let cx = player.offsetLeft+player.offsetWidth/2+joyVec.x*PLAYER_MOVE_SPEED;
         let cy = player.offsetTop+player.offsetHeight/2+joyVec.y*PLAYER_MOVE_SPEED;
-        cx = Math.max(player.offsetWidth/2, Math.min(cx, gameRect.width-player.offsetWidth/2));
-        cy = Math.max(gameRect.height*0.25, Math.min(cy, gameRect.height-player.offsetHeight/2));
+        const minX = player.offsetWidth/2, maxX = gameRect.width-player.offsetWidth/2;
+        const minY = gameRect.height*0.25, maxY = gameRect.height-player.offsetHeight/2;
+        cx = Math.max(minX, Math.min(cx, maxX));
+        cy = Math.max(minY, Math.min(cy, maxY));
         player.style.left=(cx-player.offsetWidth/2)+'px';
         player.style.top=(cy-player.offsetHeight/2)+'px';
     }
@@ -270,42 +272,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 충돌 감지 & 처리 ---
-    function isColliding(a, b) {
-        const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();
-        return !(r1.right<r2.left||r1.left>r2.right||r1.bottom<r2.top||r1.top>r2.bottom);
-    }
+    function isColliding(a, b) { const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect(); return !(r1.right<r2.left||r1.left>r2.right||r1.bottom<r2.top||r1.top>r2.bottom); }
     function handleHit(el) { el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'), 100); }
     function handleCollisions() {
         for (let i = playerBullets.length - 1; i >= 0; i--) {
-            const bt = playerBullets[i];
-            if (!bt) continue;
+            const bt = playerBullets[i]; if (!bt) continue;
             const dmg = bt.attackPower || playerStats.attackPower;
             if (isColliding(bt.element, boss)) {
-                handleHit(boss);
-                bossState.life -= dmg;
+                handleHit(boss); bossState.life -= dmg;
                 if (!isBerserk && bossState.life <= baseBossStats.life/2) {
-                    isBerserk = true;
-                    clearInterval(bossAttackId);
+                    isBerserk = true; clearInterval(bossAttackId);
                     bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), 1000);
                 }
-                bt.element.remove();
-                playerBullets.splice(i, 1);
+                bt.element.remove(); playerBullets.splice(i, 1);
                 if (bossState.life <= 0) endGame(true);
                 continue;
             }
             for (let j = enemies.length - 1; j >= 0; j--) {
                 const en = enemies[j];
                 if (isColliding(bt.element, en.element)) {
-                    handleHit(en.element);
-                    en.life -= dmg;
-                    bt.element.remove();
-                    playerBullets.splice(i, 1);
+                    handleHit(en.element); en.life -= dmg;
+                    bt.element.remove(); playerBullets.splice(i, 1);
                     if (en.life <= 0) {
-                        minionsDefeated++;
-                        score += 100;
+                        minionsDefeated++; score += 100;
                         if (Math.random() < 0.5) createItem(en.x, en.y);
-                        en.element.remove();
-                        enemies.splice(j, 1);
+                        en.element.remove(); enemies.splice(j, 1);
                     }
                     break;
                 }
@@ -316,10 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const bt = enemyBullets[i];
             if (isColliding(bt.element, player)) {
                 playerStats.life -= baseBossStats.attackPower;
-                wrapper.classList.add('shake');
-                setTimeout(() => wrapper.classList.remove('shake'), 100);
-                bt.element.remove();
-                enemyBullets.splice(i, 1);
+                wrapper.classList.add('shake'); setTimeout(() => wrapper.classList.remove('shake'), 100);
+                bt.element.remove(); enemyBullets.splice(i, 1);
                 if (playerStats.life <= 0) endGame(false);
             }
         }
@@ -327,10 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const en = enemies[i];
             if (isColliding(en.element, player)) {
                 playerStats.life -= en.collisionDamage;
-                wrapper.classList.add('shake');
-                setTimeout(() => wrapper.classList.remove('shake'), 100);
-                en.element.remove();
-                enemies.splice(i, 1);
+                wrapper.classList.add('shake'); setTimeout(() => wrapper.classList.remove('shake'), 100);
+                en.element.remove(); enemies.splice(i, 1);
                 if (playerStats.life <= 0) endGame(false);
             }
         }
@@ -338,8 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const it = items[i];
             if (isColliding(it.element, player)) {
                 applyItemEffect(it.type);
-                it.element.remove();
-                items.splice(i, 1);
+                it.element.remove(); items.splice(i, 1);
             }
         }
     }
@@ -347,11 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 아이템 효과 ---
     function applyItemEffect(type) {
         if (type === 'superhyojeong') {
-            isInvincible = true;
-            player.classList.add('invincible');
-            let t = 10;
-            dashShjTimer.innerText=t;
-            dashSuperHyojeong.style.display='block';
+            isInvincible = true; player.classList.add('invincible');
+            let t = 10; dashShjTimer.innerText=t; dashSuperHyojeong.style.display='block';
             clearInterval(shjTimerId);
             shjTimerId = setInterval(() => {
                 dashShjTimer.innerText = --t;
@@ -360,30 +343,20 @@ document.addEventListener('DOMContentLoaded', () => {
             applyItemEffect('superweapon');
         }
         else if (type === 'superweapon') {
-            if (isSuperActive && !isInvincible) return;
-            isSuperActive = true;
-            let t = 10;
-            dashSuperTimer.innerText = t;
-            dashSuperWeapon.style.display = 'block';
+            if (isSuperActive && !isInvincible) return; isSuperActive = true;
+            let t = 10; dashSuperTimer.innerText = t; dashSuperWeapon.style.display = 'block';
             clearInterval(superTimerId);
             superTimerId = setInterval(() => {
                 dashSuperTimer.innerText = --t;
-                if (t <= 0) {
-                    clearInterval(superTimerId);
-                    dashSuperWeapon.style.display = 'none';
-                    isSuperActive = false;
-                }
+                if (t <= 0) { clearInterval(superTimerId); dashSuperWeapon.style.display = 'none'; isSuperActive = false; }
             }, 1000);
         } else if (type === 'heal') {
             playerStats.life = playerStats.maxLife;
         } else if (type === 'rifle' && playerStats.rifleLevel < 5) {
-            playerStats.rifleLevel++;
-            playerStats.attackPower += 3;
+            playerStats.rifleLevel++; playerStats.attackPower += 3;
         } else if (type === 'speed' && playerStats.attackSpeed < playerStats.maxAttackSpeed) {
             playerStats.attackSpeed = parseFloat((playerStats.attackSpeed + 0.5).toFixed(1));
-            patterns.forEach(id => clearInterval(id));
-            patterns = [];
-            startPatterns();
+            patterns.forEach(id => clearInterval(id)); patterns = []; startPatterns();
         }
     }
 
@@ -393,8 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = arr.length - 1; i >= 0; i--) {
                 const o = arr[i];
                 if (o.y < -50 || o.y > gameContainer.offsetHeight + 50 || o.x < -50 || o.x > gameContainer.offsetWidth + 50) {
-                    o.element.remove();
-                    arr.splice(i, 1);
+                    o.element.remove(); arr.splice(i, 1);
                 }
             }
         });
@@ -413,14 +385,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dashSpeedLvl.innerText    = playerStats.attackSpeed.toFixed(1);
     }
     function endGame(win) {
-        if (isGameOver) return;
-        isGameOver = true;
+        if (isGameOver) return; isGameOver = true;
         cancelAnimationFrame(gameLoopId);
         patterns.forEach(id=>clearInterval(id));
-        clearInterval(bossAttackId);
-        clearInterval(bossMoveId);
-        clearInterval(superTimerId);
-        clearInterval(shjTimerId);
+        clearInterval(bossAttackId); clearInterval(bossMoveId); clearInterval(superTimerId); clearInterval(shjTimerId);
 
         const winSeq = getEl('win-sequence'), loseS = getEl('ending-story-lose'), scoreD = getEl('score-details');
         
@@ -454,31 +422,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 조이스틱 이벤트 ---
-    joystick.addEventListener('pointerdown', e => {
-      joyActive = true;
-      e.preventDefault();
-    }, { passive: false });
+    function handleJoyStart(e) {
+        joyActive = true;
+        stick.style.transition = '0s';
+        if (e.touches) e.preventDefault();
+    }
+    function handleJoyMove(e) {
+        if (!joyActive) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = clientX - joyCenter.x;
+        const dy = clientY - joyCenter.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist === 0) { joyVec = {x: 0, y: 0}; return; }
 
-    joystick.addEventListener('pointermove', e => {
-      if (!joyActive) return;
-      const dx = e.clientX - joyCenter.x, dy = e.clientY - joyCenter.y;
-      const dist = Math.hypot(dx, dy);
-      const ratio = Math.min(dist, joyRadius) / joyRadius;
-      joyVec.x = (dx / dist) * ratio;
-      joyVec.y = (dy / dist) * ratio;
-      const maxOff = joyRadius - stick.offsetWidth / 2;
-      const mx = joyVec.x * maxOff, my = joyVec.y * maxOff;
-      stick.style.transform = `translate(${mx}px, ${my}px)`;
-      e.preventDefault();
-    }, { passive: false });
-    
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
-        joystick.addEventListener(evt, () => {
-            joyActive = false;
-            joyVec = { x: 0, y: 0 };
-            stick.style.transform = 'translate(-50%, -50%)';
-        }, { passive: false });
-    });
+        joyVec.x = dx / dist;
+        joyVec.y = dy / dist;
+
+        const stickMaxOffset = joyRadius - stick.offsetWidth / 2;
+        const stickX = Math.max(-stickMaxOffset, Math.min(dx, stickMaxOffset));
+        const stickY = Math.max(-stickMaxOffset, Math.min(dy, stickMaxOffset));
+        stick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+        if (e.touches) e.preventDefault();
+    }
+    function handleJoyEnd() {
+        joyActive = false;
+        joyVec = { x: 0, y: 0 };
+        stick.style.transition = '0.1s';
+        stick.style.transform = 'translate(-50%, -50%)';
+    }
+
+    joystick.addEventListener('pointerdown', handleJoyStart, { passive: false });
+    window.addEventListener('pointermove', handleJoyMove, { passive: false });
+    window.addEventListener('pointerup', handleJoyEnd, { passive: false });
+    joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
+    window.addEventListener('touchmove', handleJoyMove, { passive: false });
+    window.addEventListener('touchend', handleJoyEnd, { passive: false });
+    window.addEventListener('touchcancel', handleJoyEnd, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
     window.addEventListener('resize', () => gameRect = gameContainer.getBoundingClientRect());
