@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const endingScreen = getEl('ending-screen');
     const realStartButton = getEl('real-start-button');
     const startGameButton = getEl('start-game-button');
+    const restartButton = getEl('restart-button');
     const player = getEl('player');
     const boss = getEl('boss');
     const playerHpBar = getEl('player-hp-bar');
@@ -29,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const joystick = getEl('joystick');
     const stick = getEl('stick');
     const winSequence = getEl('win-sequence');
-    const finalWinView = getEl('final-win-view');
-    const finalLoseView = getEl('final-lose-view');
+    const endingStoryLose = getEl('ending-story-lose');
+    const scoreDetails = getEl('score-details');
 
     // --- 상태 변수 ---
     let playerStats, bossState, minionsDefeated, score, gameLoopId, finalScore;
@@ -58,11 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 화면 전환 헬퍼 ---
     function showScreen(screen) {
         screens.forEach(s => s.classList.remove('active'));
         if (screen) screen.classList.add('active');
     }
 
+    // --- 타이틀 화면 초기화 ---
     function initTitleScreen() {
         let active = true;
         showScreen(titleScreen);
@@ -80,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('click', onInteract);
     }
 
+    // --- 버튼 이벤트 리스너 ---
     realStartButton.addEventListener('click', () => {
         sceneIndex = 0;
         introSequence.querySelectorAll('.scene').forEach((sc, i) => sc.classList.toggle('active', i === 0));
@@ -101,6 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initGame();
     });
     
+    restartButton.addEventListener('click', initTitleScreen);
+    
     bgmToggle.addEventListener('click', () => {
         bgm.muted = !bgm.muted;
         bgmToggle.innerText = bgm.muted ? '🎵 BGM OFF' : '🎵 BGM ON';
@@ -108,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!bgm.muted && bgm.paused) bgm.play();
     });
 
+    // --- 게임 초기화 ---
     function initGame() {
         playerStats = { ...basePlayerStats };
         bossState = { element: boss, ...baseBossStats, x: gameContainer.offsetWidth / 2 };
@@ -128,10 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         player.classList.remove('invincible');
         dashSuperWeapon.style.display = 'none';
         dashSuperHyojeong.style.display = 'none';
-        
-        finalWinView.style.display = 'none';
-        finalLoseView.style.display = 'none';
+        scoreDetails.style.display = 'none';
         winSequence.style.display = 'none';
+        endingStoryLose.style.display = 'none';
 
         updateGameRects();
         updateUI();
@@ -140,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
+    // --- 메인 루프 ---
     function gameLoop() {
         if (isGameOver) return;
         movePlayerByJoystick();
@@ -154,9 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
+    // --- 패턴 시작 ---
     function startPatterns() {
-        patterns.forEach(id => clearInterval(id));
-        patterns = [];
         patterns.push(setInterval(() => !isGameOver && createPlayerBullet(), 1000 / playerStats.attackSpeed));
         const bossAttackId = setInterval(() => !isGameOver && createBossSpreadShot(), isBerserk ? 1000 : 1400);
         const bossMoveId = setInterval(() => !isGameOver && moveBoss(), 50);
@@ -167,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         patterns.push(setInterval(() => !isGameOver && createItem(Math.random()*(gameRect.width-30), Math.random()*(gameRect.height-30)), 3000));
     }
 
+    // --- 생성 함수들 ---
     function createPlayerBullet() {
         if (isSuperActive) {
             const num = isInvincible ? 30 : 10, speed = 15;
@@ -223,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         items.push({ element: it, x, y, type, speedX: 0, speedY: 1 });
     }
 
+    // --- 이동 함수들 ---
     function movePlayerByJoystick() {
         if (!joyActive) return;
         let cx = player.offsetLeft+player.offsetWidth/2+joyVec.x*PLAYER_MOVE_SPEED;
@@ -251,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 충돌 감지 & 처리 ---
     function isColliding(a,b){const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();return!(r1.right<r2.left||r1.left>r2.right||r1.bottom<r2.top||r1.top>r2.bottom);}
     function handleHit(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),100);}
     function handleCollisions() {
@@ -309,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- 아이템 효과 ---
     function applyItemEffect(type) {
         if (type === 'superhyojeong') {
             isInvincible = true; player.classList.add('invincible');
@@ -337,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- 화면 밖 오브젝트 정리 ---
     function cleanupObjects() {
         [playerBullets, enemies, enemyBullets, items].forEach(arr => {
             for (let i = arr.length - 1; i >= 0; i--) {
@@ -348,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- UI 업데이트 & 게임 종료 ---
     function updateUI() {
         const pl = Math.max(0, playerStats.life);
         const bl = Math.max(0, bossState.life);
@@ -363,26 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGameOver) return; isGameOver = true;
         cancelAnimationFrame(gameLoopId);
         patterns.forEach(id=>clearInterval(id));
-        
-        const scoreDetailsContainer = win ? finalWinView.querySelector('.score-details') : finalLoseView.querySelector('.score-details');
-        const lives = Math.max(0, playerStats.life);
-        finalScore = lives * 10 + score;
-        
-        scoreDetailsContainer.innerHTML = `
-            <h1 id="result-title">${win ? 'MISSION CLEAR!' : 'GAME OVER'}</h1>
-            <p>남은 라이프: ${lives} (x10점)</p>
-            <p>처치 미니언: ${minionsDefeated} (x100점)</p>
-            <hr>
-            <h3>최종 점수: ${finalScore}</h3>
-            <div class="button-group">
-                <button id="restart-button-end">다시 도전하기</button>
-            </div>
-        `;
-        
-        getEl('restart-button-end').addEventListener('click', initTitleScreen);
-        
+        clearInterval(superTimerId); clearInterval(shjTimerId);
+
         if (win) {
-            winSequence.style.display = 'block';
+            endingStoryLose.style.display = 'none'; winSequence.style.display = 'block';
             let winSceneIndex = 0;
             const winScenes = winSequence.querySelectorAll('.scene');
             winScenes.forEach((s,i)=>s.classList.toggle('active', i===0));
@@ -393,28 +389,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     winSequence.removeEventListener('click', winClickHandler);
                     winSequence.style.display = 'none';
-                    finalWinView.style.display = 'flex';
+                    scoreDetails.style.display = 'block';
                 }
             };
             winSequence.addEventListener('click', winClickHandler);
         } else {
-            finalLoseView.style.display = 'flex';
+            winSequence.style.display = 'none'; endingStoryLose.style.display = 'flex'; scoreDetails.style.display = 'block';
         }
         
+        getEl('result-title').innerText = win ? 'MISSION CLEAR!' : 'GAME OVER';
+        const lives = Math.max(0, playerStats.life);
+        getEl('result-lives').innerText   = `${lives} (x10점)`;
+        getEl('result-minions').innerText = `${minionsDefeated} (x100점)`;
+        finalScore = lives * 10 + score;
+        getEl('final-score').innerText = finalScore;
+
         boss.style.display = 'none';
-        setTimeout(() => {
-            gameContainer.style.display = 'none';
-            showScreen(endingScreen);
-        }, 1500);
+        showScreen(endingScreen);
     }
-    
+
+    // --- 조이스틱 이벤트 ---
     function updateGameRects() {
         gameRect = gameContainer.getBoundingClientRect();
         const rect = joystick.getBoundingClientRect();
         joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
         joyRadius = rect.width / 2;
     }
-
     function handleJoyStart(e) {
         joyActive = true;
         stick.style.transition = '0s';
@@ -460,8 +460,8 @@ document.addEventListener('DOMContentLoaded', () => {
     joystick.addEventListener('pointerdown', handleJoyStart, { passive: false });
     joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
 
+    // --- 창 리사이즈 및 초기 실행 ---
     window.addEventListener('resize', updateGameRects);
-    
     preloadImages(imagesToLoad, () => {
         loadingScreen.classList.remove('active');
         initTitleScreen();
