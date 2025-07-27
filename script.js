@@ -48,37 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseBossStats   = { life: 2000, maxLife: 2000, attackPower: 10, moveSpeed: 2, moveDirection: 1 };
     const minionStats     = { life: 1, attackPower: 2, collisionDamage: 20 };
 
-    // --- 수정: 안정성을 높인 이미지 프리로딩 함수 ---
     const imagesToLoad = ['hyojeong_ingame.png', 'boss.png', 'minion_ingame.png', 'hyojeong_intro_ending.png', 'minyeol_intro_ending.png'];
     function preloadImages(urls, cb) {
-        let loadedCount = 0;
-        const totalImages = urls.length;
-        console.log(`이미지 ${totalImages}개 로딩을 시작합니다...`);
-
-        if (totalImages === 0) {
-            console.log("로드할 이미지가 없습니다. 바로 시작합니다.");
-            cb();
-            return;
-        }
-
-        urls.forEach(url => {
+        let loaded = 0;
+        urls.forEach(src => {
             const img = new Image();
-            img.src = url;
-
-            const onComplete = () => {
-                loadedCount++;
-                console.log(`'${url}' 로드 완료 (${loadedCount}/${totalImages})`);
-                if (loadedCount === totalImages) {
-                    console.log("모든 이미지 로딩 완료!");
-                    cb();
-                }
-            };
-            
-            img.onload = onComplete;
-            img.onerror = () => {
-                console.error(`이미지 로드 실패: ${url}. 파일 이름이나 경로를 확인해주세요.`);
-                onComplete(); // 실패해도 카운트를 올려서 로딩이 멈추지 않도록 함
-            };
+            img.src = src;
+            img.onload = img.onerror = () => { if (++loaded === urls.length) cb(); };
         });
     }
 
@@ -91,10 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function initTitleScreen() {
         let active = true;
         showScreen(titleScreen);
-        function onInteract() {
+        function onInteract(e) {
             if (!active) return;
             active = false;
-            if (!isMusicPlaying) bgm.play().then(() => isMusicPlaying = true).catch(() => {});
+            if (!isMusicPlaying) {
+                bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
+            }
             showScreen(helpScreen);
             window.removeEventListener('keydown', onInteract);
             window.removeEventListener('click', onInteract);
@@ -119,17 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    startGameButton.addEventListener('click', () => {
-        showScreen(gameContainer);
-        initGame();
-    });
-
-    restartButton.addEventListener('click', () => {
-        showScreen(titleScreen);
-        initTitleScreen();
-    });
-
-    // 공유하기 버튼은 현재 HTML에 없습니다.
+    startGameButton.addEventListener('click', () => { showScreen(gameContainer); initGame(); });
+    restartButton.addEventListener('click', initTitleScreen);
+    
+    // 공유하기 버튼 (HTML에 없는 경우 오류 방지)
     if (shareButton) {
         shareButton.addEventListener('click', async () => {
             const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${finalScore}\n\n너도 도전해봐! 👇`;
@@ -167,14 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         player.style.left = (gameContainer.offsetWidth / 2 - player.offsetWidth / 2) + 'px';
         player.style.top  = (gameContainer.offsetHeight - player.offsetHeight - 30) + 'px';
-        boss.style.display = 'block';
-        boss.classList.remove('hit');
+        boss.style.display = 'block'; boss.classList.remove('hit');
         player.classList.remove('invincible');
-        dashSuperWeapon.style.display = 'none';
-        dashSuperHyojeong.style.display = 'none';
-        getEl('score-details').style.display = 'none';
-        getEl('win-sequence').style.display = 'none';
-        getEl('ending-story-lose').style.display = 'none';
+        dashSuperWeapon.style.display = 'none'; dashSuperHyojeong.style.display = 'none';
+        getEl('score-details').style.display = 'none'; getEl('win-sequence').style.display = 'none'; getEl('ending-story-lose').style.display = 'none';
 
         const rect = joystick.getBoundingClientRect();
         joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -190,10 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop() {
         if (isGameOver) return;
         movePlayerByJoystick();
-        moveObjects(playerBullets);
-        moveObjects(enemies);
-        moveObjects(enemyBullets);
-        moveObjects(items);
+        moveObjects(playerBullets); moveObjects(enemies); moveObjects(enemyBullets); moveObjects(items);
+        moveBoss();
         handleCollisions();
         cleanupObjects();
         updateUI();
@@ -392,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         [playerBullets, enemies, enemyBullets, items].forEach(arr => {
             for (let i = arr.length - 1; i >= 0; i--) {
                 const o = arr[i];
-                if (o.y < -50 || o.y > gameContainer.offsetHeight + 50 || o.x < -50 || o.x > gameContainer.offsetWidth + 50) {
+                if (o && o.element && (o.y < -50 || o.y > gameContainer.offsetHeight + 50 || o.x < -50 || o.x > gameContainer.offsetWidth + 50)) {
                     o.element.remove(); arr.splice(i, 1);
                 }
             }
@@ -448,11 +413,17 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen(endingScreen);
     }
 
-    // --- 조이스틱 이벤트 ---
+    // --- 조이스틱 이벤트 (오류 수정된 최종 버전) ---
     function handleJoyStart(e) {
         joyActive = true;
         stick.style.transition = '0s';
         if (e.touches) e.preventDefault();
+        
+        window.addEventListener('pointermove', handleJoyMove, { passive: false });
+        window.addEventListener('touchmove', handleJoyMove, { passive: false });
+        window.addEventListener('pointerup', handleJoyEnd, { passive: false });
+        window.addEventListener('touchend', handleJoyEnd, { passive: false });
+        window.addEventListener('pointercancel', handleJoyEnd, { passive: false });
     }
     function handleJoyMove(e) {
         if (!joyActive) return;
@@ -464,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (dist === 0) { joyVec = {x: 0, y: 0}; return; }
 
-        joyVec.x = dx / dist;
+        joyVec.x = dx / dist; // 정규화된 방향 벡터
         joyVec.y = dy / dist;
 
         const stickMaxOffset = joyRadius - stick.offsetWidth / 2;
@@ -474,19 +445,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.touches) e.preventDefault();
     }
     function handleJoyEnd() {
+        if (!joyActive) return;
         joyActive = false;
         joyVec = { x: 0, y: 0 };
         stick.style.transition = '0.1s';
         stick.style.transform = 'translate(-50%, -50%)';
+
+        window.removeEventListener('pointermove', handleJoyMove);
+        window.removeEventListener('touchmove', handleJoyMove);
+        window.removeEventListener('pointerup', handleJoyEnd);
+        window.removeEventListener('touchend', handleJoyEnd);
+        window.removeEventListener('pointercancel', handleJoyEnd);
     }
 
     joystick.addEventListener('pointerdown', handleJoyStart, { passive: false });
-    window.addEventListener('pointermove', handleJoyMove, { passive: false });
-    window.addEventListener('pointerup', handleJoyEnd, { passive: false });
     joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
-    window.addEventListener('touchmove', handleJoyMove, { passive: false });
-    window.addEventListener('touchend', handleJoyEnd, { passive: false });
-    window.addEventListener('touchcancel', handleJoyEnd, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
     window.addEventListener('resize', () => {
