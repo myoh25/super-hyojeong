@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- DOM 요소 ---
-    const getEl = (id) => document.getElementById(id);
+    // --- DOM 요소 조회 ---
+    const getEl = id => document.getElementById(id);
     const wrapper = getEl('wrapper');
     const screens = document.querySelectorAll('.screen');
     const loadingScreen = getEl('loading-screen');
@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const realStartButton = getEl('real-start-button');
     const startGameButton = getEl('start-game-button');
     const restartButton = getEl('restart-button');
-    const shareButton = getEl('share-button');
     const player = getEl('player');
     const boss = getEl('boss');
     const playerHpBar = getEl('player-hp-bar');
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerHpValue = getEl('player-hp-value');
     const bossHpValue = getEl('boss-hp-value');
     const currentScoreValue = getEl('current-score-value');
-    const dashboard = getEl('dashboard');
     const dashRifleLvl = getEl('dash-rifle-lvl');
     const dashSpeedLvl = getEl('dash-speed-lvl');
     const dashSuperWeapon = getEl('dash-super-weapon');
@@ -33,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const joystick = getEl('joystick');
     const stick = getEl('stick');
 
-    // --- 게임 상태 및 설정 ---
+    // --- 상태 변수 ---
     let playerStats, bossState, minionsDefeated, score, gameLoopId, finalScore;
     let playerBullets = [], enemies = [], enemyBullets = [], items = [];
     let isGameOver = false, isBerserk = false, isSuperActive = false, isMusicPlaying = false, isInvincible = false;
@@ -41,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let patterns = [], bossAttackId, bossMoveId;
     let joyActive = false, joyVec = { x: 0, y: 0 };
     let joyCenter = { x: 0, y: 0 }, joyRadius = 0;
-    let gameRect = gameContainer.getBoundingClientRect();
+    let gameRect;
 
     const PLAYER_MOVE_SPEED = 6;
     const basePlayerStats = { life: 200, maxLife: 200, attackPower: 1, rifleLevel: 1, attackSpeed: 1.0, maxAttackSpeed: 5.0 };
@@ -58,21 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 화면 전환 ---
+    // --- 화면 전환 헬퍼 ---
     function showScreen(screen) {
         screens.forEach(s => s.classList.remove('active'));
         if (screen) screen.classList.add('active');
     }
 
+    // --- 타이틀 화면 초기화 ---
     function initTitleScreen() {
         let active = true;
         showScreen(titleScreen);
-        function onInteract(e) {
+        function onInteract() {
             if (!active) return;
             active = false;
-            if (!isMusicPlaying) {
-                bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
-            }
+            if (!isMusicPlaying) bgm.play().then(() => isMusicPlaying = true).catch(() => {});
             showScreen(helpScreen);
             window.removeEventListener('keydown', onInteract);
             window.removeEventListener('click', onInteract);
@@ -81,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('click', onInteract);
     }
 
+    // --- 버튼 이벤트 리스너 ---
     realStartButton.addEventListener('click', () => {
         sceneIndex = 0;
         introSequence.querySelectorAll('.scene').forEach((sc, i) => sc.classList.toggle('active', i === 0));
@@ -91,30 +89,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.tagName === 'BUTTON') return;
         const scs = introSequence.querySelectorAll('.scene');
         if (sceneIndex < scs.length - 1) {
-            const currentActiveScene = introSequence.querySelector('.scene.active');
-            if(currentActiveScene) currentActiveScene.classList.remove('active');
+            const current = introSequence.querySelector('.scene.active');
+            if(current) current.classList.remove('active');
             scs[++sceneIndex].classList.add('active');
         }
     });
 
-    startGameButton.addEventListener('click', () => { showScreen(gameContainer); initGame(); });
+    startGameButton.addEventListener('click', () => {
+        showScreen(gameContainer);
+        initGame();
+    });
+
     restartButton.addEventListener('click', initTitleScreen);
     
-    // 공유하기 버튼 (HTML에 없는 경우 오류 방지)
-    if (shareButton) {
-        shareButton.addEventListener('click', async () => {
-            const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${finalScore}\n\n너도 도전해봐! 👇`;
-            try {
-                if (navigator.share) {
-                    await navigator.share({ title: 'SUPER HYOJEONG', text: shareText, url: window.location.href });
-                } else if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
-                    alert('점수와 링크가 클립보드에 복사되었어요!');
-                }
-            } catch (err) { console.error('Share failed:', err); }
-        });
-    }
-
     bgmToggle.addEventListener('click', () => {
         bgm.muted = !bgm.muted;
         bgmToggle.innerText = bgm.muted ? '🎵 BGM OFF' : '🎵 BGM ON';
@@ -140,8 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         player.style.top  = (gameContainer.offsetHeight - player.offsetHeight - 30) + 'px';
         boss.style.display = 'block'; boss.classList.remove('hit');
         player.classList.remove('invincible');
-        dashSuperWeapon.style.display = 'none'; dashSuperHyojeong.style.display = 'none';
-        getEl('score-details').style.display = 'none'; getEl('win-sequence').style.display = 'none'; getEl('ending-story-lose').style.display = 'none';
+        dashSuperWeapon.style.display = 'none';
+        dashSuperHyojeong.style.display = 'none';
+        getEl('score-details').style.display = 'none';
+        getEl('win-sequence').style.display = 'none';
+        getEl('ending-story-lose').style.display = 'none';
 
         const rect = joystick.getBoundingClientRect();
         joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -182,18 +172,17 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < num; i++) {
                 const angle = (360 / num) * i, rad = angle * Math.PI / 180;
                 const b = document.createElement('div'); b.className = 'player-bullet';
-                b.style.left = (player.offsetLeft+player.offsetWidth/2-4) + 'px'; b.style.top = player.offsetTop + 'px';
+                b.style.left = (player.offsetLeft+player.offsetWidth/2-4)+'px'; b.style.top = player.offsetTop+'px';
                 gameContainer.appendChild(b);
-                playerBullets.push({ element: b, x: b.offsetLeft, y: b.offsetTop, speedX: speed * Math.cos(rad), speedY: speed * Math.sin(rad), attackPower: 10 });
+                playerBullets.push({ element:b, x:b.offsetLeft, y:b.offsetTop, speedX:speed*Math.cos(rad), speedY:speed*Math.sin(rad), attackPower:10 });
             }
             return;
         }
         const shoot = off => {
             const b = document.createElement('div'); b.className = 'player-bullet';
-            b.style.left = (player.offsetLeft + player.offsetWidth / 2 - 4 + off) + 'px';
-            b.style.top = player.offsetTop + 'px';
+            b.style.left = (player.offsetLeft+player.offsetWidth/2-4+off)+'px'; b.style.top = player.offsetTop+'px';
             gameContainer.appendChild(b);
-            playerBullets.push({ element: b, x: b.offsetLeft, y: b.offsetTop, speedX: 0, speedY: -10 });
+            playerBullets.push({ element:b, x:b.offsetLeft, y:b.offsetTop, speedX:0, speedY:-10 });
         };
         switch (playerStats.rifleLevel) {
             case 1: shoot(0); break;
@@ -205,20 +194,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function createMinion() {
         const m = document.createElement('img'); m.src = 'minion_ingame.png'; m.className = 'minion';
-        const x = Math.random() * (gameContainer.offsetWidth - 40);
-        m.style.left = x + 'px'; m.style.top  = '-40px';
+        const x = Math.random()*(gameContainer.offsetWidth-40);
+        m.style.left = x+'px'; m.style.top = '-40px';
         gameContainer.appendChild(m);
-        enemies.push({ element: m, x, y: -40, life: minionStats.life, attackPower: minionStats.attackPower, collisionDamage: minionStats.collisionDamage, speedX: 0, speedY: 2 });
+        enemies.push({ element:m, x, y:-40, life:minionStats.life, attackPower:minionStats.attackPower, collisionDamage:minionStats.collisionDamage, speedX:0, speedY:2 });
     }
     function createEnemyBullet(src, angle) {
         const bullet = document.createElement('div'); bullet.className = 'enemy-bullet';
-        const r1 = src.getBoundingClientRect(); const r2 = gameContainer.getBoundingClientRect();
-        const x = r1.left - r2.left + r1.width / 2;
-        const y = r1.top  - r2.top  + r1.height;
-        bullet.style.left = (x - 6) + 'px'; bullet.style.top  = (y - 6) + 'px';
+        const r1=src.getBoundingClientRect(), r2=gameContainer.getBoundingClientRect();
+        const x=r1.left-r2.left+r1.width/2, y=r1.top-r2.top+r1.height;
+        bullet.style.left=(x-6)+'px'; bullet.style.top=(y-6)+'px';
         gameContainer.appendChild(bullet);
-        const rad = angle * Math.PI / 180, speed = 5;
-        enemyBullets.push({ element: bullet, x, y, speedX: speed * Math.cos(rad), speedY: speed * Math.sin(rad) });
+        const rad = angle*Math.PI/180, speed=5;
+        enemyBullets.push({ element:bullet, x, y, speedX:speed*Math.cos(rad), speedY:speed*Math.sin(rad) });
     }
     function createBossSpreadShot() { [75, 90, 105].forEach(a => createEnemyBullet(boss, a)); }
     function createItem(x, y) {
@@ -249,23 +237,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function moveBoss() {
         if (isGameOver) return;
         bossState.x += bossState.moveSpeed * bossState.moveDirection;
-        if (bossState.x > gameContainer.offsetWidth - boss.offsetWidth/2 || bossState.x < boss.offsetWidth/2) {
+        if (bossState.x > gameContainer.offsetWidth - bossState.element.offsetWidth/2 || bossState.x < bossState.element.offsetWidth/2) {
           bossState.moveDirection *= -1;
         }
-        boss.style.left = (bossState.x - boss.offsetWidth/2) + 'px';
+        boss.style.left = (bossState.x - bossState.element.offsetWidth/2) + 'px';
     }
     function moveObjects(arr) {
         arr.forEach(o => {
             o.x += o.speedX;
             o.y += o.speedY;
-            o.element.style.left = (o.x - o.element.offsetWidth / 2) + 'px';
-            o.element.style.top  = (o.y - o.element.offsetHeight / 2) + 'px';
+            o.element.style.left = (o.x - o.element.offsetWidth/2)+'px';
+            o.element.style.top  = (o.y - o.element.offsetHeight/2)+'px';
         });
     }
 
     // --- 충돌 감지 & 처리 ---
-    function isColliding(a, b) { const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect(); return !(r1.right<r2.left||r1.left>r2.right||r1.bottom<r2.top||r1.top>r2.bottom); }
-    function handleHit(el) { el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'), 100); }
+    function isColliding(a,b){const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();return!(r1.right<r2.left||r1.left>r2.right||r1.bottom<r2.top||r1.top>r2.bottom);}
+    function handleHit(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),100);}
     function handleCollisions() {
         for (let i = playerBullets.length - 1; i >= 0; i--) {
             const bt = playerBullets[i]; if (!bt) continue;
@@ -299,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bt = enemyBullets[i];
             if (isColliding(bt.element, player)) {
                 playerStats.life -= baseBossStats.attackPower;
-                wrapper.classList.add('shake'); setTimeout(() => wrapper.classList.remove('shake'), 100);
+                wrapper.classList.add('shake'); setTimeout(()=>wrapper.classList.remove('shake'),100);
                 bt.element.remove(); enemyBullets.splice(i, 1);
                 if (playerStats.life <= 0) endGame(false);
             }
@@ -308,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const en = enemies[i];
             if (isColliding(en.element, player)) {
                 playerStats.life -= en.collisionDamage;
-                wrapper.classList.add('shake'); setTimeout(() => wrapper.classList.remove('shake'), 100);
+                wrapper.classList.add('shake'); setTimeout(()=>wrapper.classList.remove('shake'),100);
                 en.element.remove(); enemies.splice(i, 1);
                 if (playerStats.life <= 0) endGame(false);
             }
@@ -333,8 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (t <= 0) { clearInterval(shjTimerId); dashSuperHyojeong.style.display='none'; isInvincible=false; player.classList.remove('invincible'); }
             }, 1000);
             applyItemEffect('superweapon');
-        }
-        else if (type === 'superweapon') {
+        } else if (type === 'superweapon') {
             if (isSuperActive && !isInvincible) return; isSuperActive = true;
             let t = 10; dashSuperTimer.innerText = t; dashSuperWeapon.style.display = 'block';
             clearInterval(superTimerId);
@@ -357,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         [playerBullets, enemies, enemyBullets, items].forEach(arr => {
             for (let i = arr.length - 1; i >= 0; i--) {
                 const o = arr[i];
-                if (o && o.element && (o.y < -50 || o.y > gameContainer.offsetHeight + 50 || o.x < -50 || o.x > gameContainer.offsetWidth + 50)) {
+                if (o && o.element && (o.y<-50 || o.y>gameContainer.offsetHeight+50 || o.x<-50 || o.x>gameContainer.offsetWidth+50)) {
                     o.element.remove(); arr.splice(i, 1);
                 }
             }
@@ -413,29 +400,22 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen(endingScreen);
     }
 
-    // --- 조이스틱 이벤트 (오류 수정된 최종 버전) ---
+    // --- 조이스틱 이벤트 ---
     function handleJoyStart(e) {
         joyActive = true;
         stick.style.transition = '0s';
         if (e.touches) e.preventDefault();
-        
-        window.addEventListener('pointermove', handleJoyMove, { passive: false });
-        window.addEventListener('touchmove', handleJoyMove, { passive: false });
-        window.addEventListener('pointerup', handleJoyEnd, { passive: false });
-        window.addEventListener('touchend', handleJoyEnd, { passive: false });
-        window.addEventListener('pointercancel', handleJoyEnd, { passive: false });
     }
     function handleJoyMove(e) {
         if (!joyActive) return;
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const dx = clientX - joyCenter.x;
-        const dy = clientY - joyCenter.y;
+        const dx = clientX - joyCenter.x, dy = clientY - joyCenter.y;
         const dist = Math.hypot(dx, dy);
         
         if (dist === 0) { joyVec = {x: 0, y: 0}; return; }
 
-        joyVec.x = dx / dist; // 정규화된 방향 벡터
+        joyVec.x = dx / dist;
         joyVec.y = dy / dist;
 
         const stickMaxOffset = joyRadius - stick.offsetWidth / 2;
@@ -445,28 +425,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.touches) e.preventDefault();
     }
     function handleJoyEnd() {
-        if (!joyActive) return;
         joyActive = false;
         joyVec = { x: 0, y: 0 };
         stick.style.transition = '0.1s';
         stick.style.transform = 'translate(-50%, -50%)';
-
-        window.removeEventListener('pointermove', handleJoyMove);
-        window.removeEventListener('touchmove', handleJoyMove);
-        window.removeEventListener('pointerup', handleJoyEnd);
-        window.removeEventListener('touchend', handleJoyEnd);
-        window.removeEventListener('pointercancel', handleJoyEnd);
     }
 
     joystick.addEventListener('pointerdown', handleJoyStart, { passive: false });
+    joystick.addEventListener('pointermove', handleJoyMove, { passive: false });
+    joystick.addEventListener('pointerup', handleJoyEnd, { passive: false });
     joystick.addEventListener('touchstart', handleJoyStart, { passive: false });
+    joystick.addEventListener('touchmove', handleJoyMove, { passive: false });
+    joystick.addEventListener('touchend', handleJoyEnd, { passive: false });
+    joystick.addEventListener('touchcancel', handleJoyEnd, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
-    window.addEventListener('resize', () => {
+    function updateGameRects() {
         gameRect = gameContainer.getBoundingClientRect();
         const rect = joystick.getBoundingClientRect();
         joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
         joyRadius = rect.width / 2;
-    });
+    }
+    window.addEventListener('resize', updateGameRects);
     preloadImages(imagesToLoad, initTitleScreen);
 });
