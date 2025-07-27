@@ -48,13 +48,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseBossStats   = { life: 2000, maxLife: 2000, attackPower: 10, moveSpeed: 2, moveDirection: 1 };
     const minionStats     = { life: 1, attackPower: 2, collisionDamage: 20 };
 
+    // --- 수정: 안정성을 높인 이미지 프리로딩 함수 ---
     const imagesToLoad = ['hyojeong_ingame.png', 'boss.png', 'minion_ingame.png', 'hyojeong_intro_ending.png', 'minyeol_intro_ending.png'];
     function preloadImages(urls, cb) {
-        let loaded = 0;
-        urls.forEach(src => {
+        let loadedCount = 0;
+        const totalImages = urls.length;
+        console.log(`이미지 ${totalImages}개 로딩을 시작합니다...`);
+
+        if (totalImages === 0) {
+            console.log("로드할 이미지가 없습니다. 바로 시작합니다.");
+            cb();
+            return;
+        }
+
+        urls.forEach(url => {
             const img = new Image();
-            img.src = src;
-            img.onload = img.onerror = () => { if (++loaded === urls.length) cb(); };
+            img.src = url;
+
+            const onComplete = () => {
+                loadedCount++;
+                console.log(`'${url}' 로드 완료 (${loadedCount}/${totalImages})`);
+                if (loadedCount === totalImages) {
+                    console.log("모든 이미지 로딩 완료!");
+                    cb();
+                }
+            };
+            
+            img.onload = onComplete;
+            img.onerror = () => {
+                console.error(`이미지 로드 실패: ${url}. 파일 이름이나 경로를 확인해주세요.`);
+                onComplete(); // 실패해도 카운트를 올려서 로딩이 멈추지 않도록 함
+            };
         });
     }
 
@@ -105,17 +129,20 @@ document.addEventListener('DOMContentLoaded', () => {
         initTitleScreen();
     });
 
-    shareButton.addEventListener('click', async () => {
-        const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${finalScore}\n\n너도 도전해봐! 👇`;
-        try {
-            if (navigator.share) {
-                await navigator.share({ title: 'SUPER HYOJEONG', text: shareText, url: window.location.href });
-            } else if (navigator.clipboard) {
-                await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
-                alert('점수와 링크가 클립보드에 복사되었어요!');
-            }
-        } catch (err) { console.error('Share failed:', err); }
-    });
+    // 공유하기 버튼은 현재 HTML에 없습니다.
+    if (shareButton) {
+        shareButton.addEventListener('click', async () => {
+            const shareText = `🚀 SUPER HYOJEONG 🚀\n괴물을 물리치고 민열이를 구했다!\n\n내 점수: ${finalScore}\n\n너도 도전해봐! 👇`;
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title: 'SUPER HYOJEONG', text: shareText, url: window.location.href });
+                } else if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+                    alert('점수와 링크가 클립보드에 복사되었어요!');
+                }
+            } catch (err) { console.error('Share failed:', err); }
+        });
+    }
 
     bgmToggle.addEventListener('click', () => {
         bgm.muted = !bgm.muted;
@@ -441,8 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
         joyVec.y = dy / dist;
 
         const stickMaxOffset = joyRadius - stick.offsetWidth / 2;
-        const stickX = Math.max(-stickMaxOffset, Math.min(dx, stickMaxOffset));
-        const stickY = Math.max(-stickMaxOffset, Math.min(dy, stickMaxOffset));
+        const stickX = joyVec.x * Math.min(dist, stickMaxOffset);
+        const stickY = joyVec.y * Math.min(dist, stickMaxOffset);
         stick.style.transform = `translate(${stickX}px, ${stickY}px)`;
         if (e.touches) e.preventDefault();
     }
@@ -462,6 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('touchcancel', handleJoyEnd, { passive: false });
 
     // --- 창 리사이즈 및 초기 실행 ---
-    window.addEventListener('resize', () => gameRect = gameContainer.getBoundingClientRect());
+    window.addEventListener('resize', () => {
+        gameRect = gameContainer.getBoundingClientRect();
+        const rect = joystick.getBoundingClientRect();
+        joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        joyRadius = rect.width / 2;
+    });
     preloadImages(imagesToLoad, initTitleScreen);
 });
