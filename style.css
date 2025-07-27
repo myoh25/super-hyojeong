@@ -324,6 +324,19 @@ html, body {
 .item-superweapon { background: radial-gradient(circle, #ff4757, #ff6b81, #ff7f50); box-shadow: 0 0 20px #ff4757; color: white; }
 .item-superhyojeong { background: radial-gradient(circle, #f1c40f, #ffffff, #3498db); box-shadow: 0 0 25px #fff; }
 
+/* ===== 추가: 아이템 문자 표시 ===== */
+.item::after {
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+.item-heal::after { content: 'H'; }
+.item-rifle::after { content: 'P'; }
+.item-speed::after { content: 'S'; }
+.item-superweapon::after { content: '🔥'; }
+.item-superhyojeong::after { content: '✨'; }
+/* =============================== */
+
+
 /* 엔딩 화면 */
 .ending-story, #win-sequence {
     width: 100%;
