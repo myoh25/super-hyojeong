@@ -67,21 +67,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 타이틀 화면 초기화 ---
     function initTitleScreen() {
-        let active = true;
-        showScreen(titleScreen);
-        function onInteract() {
-            if (!active) return;
-            active = false;
-            if (!isMusicPlaying) {
-                bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
+    let active = true;
+    showScreen(titleScreen);
+
+    function onInteract() {
+        if (!active) return;
+        active = false;
+
+        // 1. 오디오 재생 시도 (성공 여부와 관계없이 다음 로직으로 진행)
+        if (!isMusicPlaying) {
+            const playPromise = bgm.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    isMusicPlaying = true;
+                }).catch(error => {
+                    console.log("BGM 자동 재생 실패. 사용자의 추가 상호작용이 필요합니다.");
+                    isMusicPlaying = false;
+                });
             }
-            showScreen(helpScreen);
-            window.removeEventListener('keydown', onInteract);
-            window.removeEventListener('click', onInteract);
         }
-        window.addEventListener('keydown', onInteract);
-        window.addEventListener('click', onInteract);
+
+        // 2. 화면 즉시 전환
+        showScreen(helpScreen);
+
+        // 3. 이벤트 리스너 제거
+        window.removeEventListener('keydown', onInteract);
+        window.removeEventListener('click', onInteract);
+        window.removeEventListener('touchstart', onInteract); // touchstart 리스너도 제거
     }
+
+    window.addEventListener('keydown', onInteract);
+    window.addEventListener('click', onInteract);
+    // 모바일 환경을 위해 touchstart 이벤트 추가
+    window.addEventListener('touchstart', onInteract);
+}
 
     // --- 버튼 이벤트 리스너 ---
     realStartButton.addEventListener('click', () => {
