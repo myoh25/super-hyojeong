@@ -334,17 +334,6 @@ html, body {
 .item-superhyojeong::after { content: '✨'; }
 
 /* 엔딩 화면 */
-#win-sequence, #final-win-view, #final-lose-view {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
 .final-narrative {
     font-size: 28px;
     font-weight: bold;
@@ -417,6 +406,38 @@ html, body {
     transform: translate(-50%, -50%);
     transition: transform 0.1s;
     pointer-events: none;
+}
+/* --- 엔딩 화면 레이아웃 재정의 --- */
+
+/* 패배 시 '결국... 구하지 못했다' 메시지 스타일 */
+.ending-narrative {
+    font-size: 24px;
+    color: #a4b0be;
+    margin-bottom: 20px;
+    /* 레이아웃 순서 1번 */
+    order: 1;
+}
+
+/* 패배 시 효정 캐릭터 스타일 */
+#ending-story-lose .ending-character {
+    width: 200px; /* 크기 살짝 조정 */
+    margin-bottom: 30px;
+    /* 레이아웃 순서 2번 */
+    order: 2;
+}
+
+/* 패배 시에만 score-details 마진 제거 및 순서 지정 */
+#ending-screen:has(#ending-story-lose[style*="display: flex"]) #score-details {
+    margin-top: 0;
+    /* 레이아웃 순서 3번 */
+    order: 3;
+}
+
+/* 승리 컷씬이 화면 하단에 나오도록 재설정 */
+#win-sequence {
+    width: 100%;
+    height: 100%;
+    display: none; /* JS로 제어 */
 }
 
 /* 애니메이션 정의 */
