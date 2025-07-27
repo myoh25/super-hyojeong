@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const joystick = getEl('joystick');
     const stick = getEl('stick');
     const winSequence = getEl('win-sequence');
-    const endingStoryLose = getEl('ending-story-lose');
-    const scoreDetails = getEl('score-details');
+    const finalWinView = getEl('final-win-view');
+    const finalLoseView = getEl('final-lose-view');
 
     // --- 상태 변수 ---
     let playerStats, bossState, minionsDefeated, score, gameLoopId, finalScore;
@@ -135,9 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
         player.classList.remove('invincible');
         dashSuperWeapon.style.display = 'none';
         dashSuperHyojeong.style.display = 'none';
-        scoreDetails.style.display = 'none';
+        
+        finalWinView.style.display = 'none';
+        finalLoseView.style.display = 'none';
         winSequence.style.display = 'none';
-        endingStoryLose.style.display = 'none';
 
         updateGameRects();
         updateUI();
@@ -376,12 +377,30 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelAnimationFrame(gameLoopId);
         patterns.forEach(id=>clearInterval(id));
         clearInterval(superTimerId); clearInterval(shjTimerId);
+        
+        // 점수판 내용을 생성하는 헬퍼 함수
+        const createScoreDetailsHTML = () => {
+            const lives = Math.max(0, playerStats.life);
+            finalScore = lives * 10 + score;
+            return `
+                <h1 id="result-title">${win ? 'MISSION CLEAR!' : 'GAME OVER'}</h1>
+                <p>남은 라이프: ${lives} (x10점)</p>
+                <p>처치 미니언: ${minionsDefeated} (x100점)</p>
+                <hr>
+                <h3>최종 점수: ${finalScore}</h3>
+                <div class="button-group">
+                    <button id="restart-button-end">다시 도전하기</button>
+                    ${win ? '<button id="share-button-end" style="background:#3498db;">자랑하기 🏆</button>' : ''}
+                </div>
+            `;
+        };
 
         if (win) {
-            endingStoryLose.style.display = 'none'; winSequence.style.display = 'block';
+            winSequence.style.display = 'block';
             let winSceneIndex = 0;
             const winScenes = winSequence.querySelectorAll('.scene');
             winScenes.forEach((s,i)=>s.classList.toggle('active', i===0));
+            
             const winClickHandler = () => {
                 if (winSceneIndex < winScenes.length - 1) {
                     winScenes[winSceneIndex].classList.remove('active');
@@ -389,25 +408,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     winSequence.removeEventListener('click', winClickHandler);
                     winSequence.style.display = 'none';
-                    scoreDetails.style.display = 'block';
+                    finalWinView.style.display = 'flex';
+                    finalWinView.querySelector('.score-details').innerHTML = createScoreDetailsHTML();
+                    getEl('restart-button-end').addEventListener('click', initTitleScreen);
+                    const shareBtn = getEl('share-button-end');
+                    if (shareBtn) shareBtn.addEventListener('click', () => {/* 공유 로직 */});
                 }
             };
             winSequence.addEventListener('click', winClickHandler);
         } else {
-            winSequence.style.display = 'none'; endingStoryLose.style.display = 'flex'; scoreDetails.style.display = 'block';
+            finalLoseView.style.display = 'flex';
+            finalLoseView.querySelector('.score-details').innerHTML = createScoreDetailsHTML();
+            getEl('restart-button-end').addEventListener('click', initTitleScreen);
         }
         
-        getEl('result-title').innerText = win ? 'MISSION CLEAR!' : 'GAME OVER';
-        const lives = Math.max(0, playerStats.life);
-        getEl('result-lives').innerText   = `${lives} (x10점)`;
-        getEl('result-minions').innerText = `${minionsDefeated} (x100점)`;
-        finalScore = lives * 10 + score;
-        getEl('final-score').innerText = finalScore;
-
         boss.style.display = 'none';
-        showScreen(endingScreen);
+        setTimeout(() => {
+            gameContainer.style.display = 'none';
+            showScreen(endingScreen);
+        }, 1500);
     }
-
+    
     // --- 조이스틱 이벤트 ---
     function updateGameRects() {
         gameRect = gameContainer.getBoundingClientRect();
